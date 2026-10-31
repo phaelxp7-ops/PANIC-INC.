@@ -43,6 +43,8 @@ window_set_cursor((mode == 1 && state == STATE_PLAYING) ? cr_none : cr_default);
 
 if (state != STATE_PLAYING) exit;
 
+flare_pulse = max(0, flare_pulse - 1);
+
 // [MULTIPLAYER FUTURO]: jogadores remotos nao leem teclado,
 // apenas interpolam para (sync_x, sync_y) recebidos pela rede.
 
@@ -146,6 +148,27 @@ player.is_moving = (_mx != 0 || _my != 0);
 move_body(player, _mx * _spd, _my * _spd, player.hitbox);
 if (player.is_moving) player.bob += player.is_running ? 0.24 : 0.15;
 
+// Sinalizador: recurso limitado que abre espaco quando o jogador fica cercado.
+if (keyboard_check_pressed(ord("Q")) && flare_charges > 0) {
+    flare_charges--;
+    flare_pulse = 34;
+    flare_x = player.x;
+    flare_y = player.y;
+    var _stunned = 0;
+    for (var i = 0; i < array_length(enemies); i++) {
+        var _flare_enemy = enemies[i];
+        if (point_distance(flare_x, flare_y, _flare_enemy.x, _flare_enemy.y) <= 220
+            && los(flare_x, flare_y, _flare_enemy.x, _flare_enemy.y)) {
+            _flare_enemy.stun = 150;
+            _flare_enemy.mode = 0;
+            _stunned++;
+        }
+    }
+    add_particles(flare_x, flare_y, 32, c_aqua, 4);
+    play_snd(snd_scare, 0.8, 1.35);
+    show_msg(_stunned > 0 ? "SINALIZADOR! AMEACAS ATORDOADAS" : "SINALIZADOR! AREA ILUMINADA", 120);
+}
+
 // ---------- Passos ----------
 var _sg = (sin(player.bob) > 0);
 if (player.is_moving && _sg != step_sign) {
@@ -182,6 +205,11 @@ alert_cd = max(0, alert_cd - 1);
 var _nearest = 99999;
 for (var i = 0; i < array_length(enemies); i++) {
     var _e = enemies[i];
+    if (_e.stun > 0) {
+        _e.stun--;
+        _e.anim += 2;
+        continue;
+    }
     var _dist = point_distance(_e.x, _e.y, player.x, player.y);
     _nearest = min(_nearest, _dist);
 
