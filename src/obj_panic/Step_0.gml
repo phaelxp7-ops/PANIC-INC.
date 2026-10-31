@@ -55,6 +55,7 @@ shake = max(0, shake - 0.6);
 hurt_flash = max(0, hurt_flash - 0.04);
 heart_pulse = max(0, heart_pulse - 0.07);
 jumpscare = max(0, jumpscare - 1);
+contract_flash = max(0, contract_flash - 1);
 if (msg_timer > 0) msg_timer--;
 if (combo_timer > 0) { combo_timer--; if (combo_timer <= 0) combo = 0; }
 
@@ -431,6 +432,13 @@ if (creak_cd <= 0) {
 // ITENS E INTERACAO (tecla E)
 // ============================================================
 nearby_item = -1;
+nearby_npc = -1;
+var _npc_dist = 54;
+for (var n = 0; n < array_length(npcs); n++) {
+    npcs[n].anim += 1.4;
+    var _nd = point_distance(player.x, player.y, npcs[n].x, npcs[n].y);
+    if (!npcs[n].used && _nd < _npc_dist) { _npc_dist = _nd; nearby_npc = n; }
+}
 var _bd = 44;
 for (var i = 0; i < array_length(items); i++) {
     items[i].timer += 3;
@@ -498,6 +506,64 @@ if (nearby_item != -1 && keyboard_check_pressed(ord("E"))) {
     nearby_item = -1;
 }
 
+var _talked_npc = false;
+if (!_picked_this_frame && nearby_npc != -1 && keyboard_check_pressed(ord("E"))) {
+    _talked_npc = true;
+    var _person = npcs[nearby_npc];
+    _person.used = true;
+    _person.revealed = _person.traitor;
+    npcs[nearby_npc] = _person;
+    if (_person.traitor) {
+        blackout = max(blackout, 95);
+        jumpscare = max(jumpscare, 20);
+        play_snd(snd_scare, 1, 0.72);
+        shake = max(shake, 10);
+        show_msg("TRAP! ELE TE VENDEU PARA O VIGIA", 200);
+        if (array_length(enemies) < max_enemies) {
+            spawn_enemy(190);
+            var _ei = array_length(enemies) - 1;
+            var _traitor_spawn = enemies[_ei];
+            _traitor_spawn.type = 3;
+            _traitor_spawn.danger = max(0.68, _traitor_spawn.danger);
+            _traitor_spawn.spd = max(1.35, _traitor_spawn.spd);
+            _traitor_spawn.stalk_cd = 100;
+            enemies[_ei] = _traitor_spawn;
+        }
+    } else {
+        var _help = irandom(2);
+        if (_help == 0) {
+            player.hp = min(player.hp_max, player.hp + 35);
+            battery = min(100, battery + 25);
+            show_msg("SOBREVIVENTE: KIT MEDICO E BATERIA PARA VOCE", 200);
+        } else if (_help == 1) {
+            flare_charges++;
+            battery = min(100, battery + 20);
+            show_msg("SOBREVIVENTE: UM SINALIZADOR EXTRA. FIQUE PERTO DE MIM", 200);
+        } else {
+            var _best_item = -1;
+            var _best_item_d = 1000000;
+            for (var k = 0; k < array_length(items); k++) {
+                if (items[k].type != ((mission_type == 0) ? 0 : ((mission_type == 1) ? 3 : 4))) continue;
+                var _id = point_distance(player.x, player.y, items[k].x, items[k].y);
+                if (_id < _best_item_d) { _best_item_d = _id; _best_item = k; }
+            }
+            if (_best_item >= 0) {
+                var _tc = floor(items[_best_item].x / tile);
+                var _tr = floor(items[_best_item].y / tile);
+                for (var dx = -2; dx <= 2; dx++) for (var dy = -2; dy <= 2; dy++) {
+                    var _mc = _tc + dx; var _mr = _tr + dy;
+                    if (_mc >= 0 && _mr >= 0 && _mc < cols && _mr < rows) explored[_mc][_mr] = 1;
+                }
+                show_msg("SOBREVIVENTE MARCOU UM ALVO NO MINIMAPA", 200);
+            } else {
+                battery = min(100, battery + 35);
+                show_msg("SOBREVIVENTE: NAO ACHEI O ALVO, MAS TROUXE BATERIA", 200);
+            }
+        }
+        play_snd(snd_win, 0.45, 1.05);
+    }
+}
+
 // ============================================================
 // SAIDA
 // ============================================================
@@ -505,7 +571,7 @@ if (exit_open) {
     var _exx = exit_c * tile + tile / 2;
     var _exy = exit_r * tile + tile / 2;
     // Extrair agora e uma escolha: o jogador pode continuar explorando e saqueando.
-    if (point_distance(player.x, player.y, _exx, _exy) < 34 && nearby_item == -1 && !_picked_this_frame
+    if (point_distance(player.x, player.y, _exx, _exy) < 34 && nearby_item == -1 && !_picked_this_frame && !_talked_npc
         && keyboard_check_pressed(ord("E"))) {
         last_bonus = max(0, 500 - floor(level_time / 60) * 4);
         pontos += 250 + last_bonus;
