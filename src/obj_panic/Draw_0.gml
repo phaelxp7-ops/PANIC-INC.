@@ -92,18 +92,22 @@ if (mode == 1 && state != STATE_TITLE && state != STATE_INTRO) {
         var _nb = 0.8 * sin(current_time / 200 + i);
         var _npc_body = (_npc.kind == 3 && _npc.revealed) ? vb_npc_alert : vb_npc;
         var _nf = _npc.face;
-        var _walk = sin(current_time / 95 + i * 2) * 3;
-        // Silhueta humana em camadas: casaco, ombros, cabeça, braços e pernas.
-        draw_box3d(_npc_body, _npc.x, _npc.y, 17 + _nb, 9, 7, 16, _nf);
-        draw_box3d(_npc_body, _npc.x + lengthdir_x(1, _nf), _npc.y + lengthdir_y(1, _nf), 26 + _nb, 13, 8, 9, _nf);
-        draw_box3d(vb_hd[2], _npc.x + lengthdir_x(2, _nf), _npc.y + lengthdir_y(2, _nf), 34 + _nb, 6, 6, 8, _nf);
+        var _walk = sin(current_time / 95 + i * 2) * 2;
+        // Silhueta humana compacta, com rosto e cabelo em tons naturais.
+        draw_box3d(_npc_body, _npc.x, _npc.y, 16 + _nb, 8, 6, 15, _nf);
+        draw_box3d(_npc_body, _npc.x + lengthdir_x(1, _nf), _npc.y + lengthdir_y(1, _nf), 25 + _nb, 12, 7, 8, _nf);
+        draw_box3d(vb_npc_head, _npc.x + lengthdir_x(2, _nf), _npc.y + lengthdir_y(2, _nf), 33 + _nb, 5.5, 5.5, 7, _nf);
+        draw_box3d(vb_npc_hair, _npc.x + lengthdir_x(1, _nf), _npc.y + lengthdir_y(1, _nf), 36 + _nb, 5.8, 5.8, 3.5, _nf);
         for (var _side = -1; _side <= 1; _side += 2) {
-            draw_box3d(_npc_body, _npc.x + lengthdir_x(6 * _side, _nf + 90), _npc.y + lengthdir_y(6 * _side, _nf + 90), 20 + _nb + _walk * _side, 3.5, 4, 13, _nf + 8 * _side);
-            draw_box3d(vb_body[0], _npc.x + lengthdir_x(3 * _side, _nf + 90), _npc.y + lengthdir_y(3 * _side, _nf + 90), 5 + _nb - _walk * _side, 3.5, 4, 10, _nf - 8 * _side);
+            draw_box3d(_npc_body, _npc.x + lengthdir_x(5 * _side, _nf + 90), _npc.y + lengthdir_y(5 * _side, _nf + 90), 19 + _nb + _walk * _side, 3, 3.5, 11, _nf + 8 * _side);
+            draw_box3d(vb_body[0], _npc.x + lengthdir_x(2.7 * _side, _nf + 90), _npc.y + lengthdir_y(2.7 * _side, _nf + 90), 5 + _nb - _walk * _side, 3, 3.5, 9, _nf - 8 * _side);
         }
         // Um pequeno reflexo ocular identifica a face quando a lanterna a alcança.
-        if (flash_on && point_distance(_npc.x, _npc.y, player.x, player.y) < flash_len) {
-            draw_box3d(vb_eye, _npc.x + lengthdir_x(6, _nf), _npc.y + lengthdir_y(6, _nf), 40 + _nb, 1.5, 1.5, 1.5, 0);
+        var _to_player = point_direction(_npc.x, _npc.y, player.x, player.y);
+        if (flash_on && point_distance(_npc.x, _npc.y, player.x, player.y) < flash_len && abs(angle_difference(_nf, _to_player)) < 65) {
+            for (var _eye = -1; _eye <= 1; _eye += 2) {
+                draw_box3d(vb_eye, _npc.x + lengthdir_x(5.1, _nf) + lengthdir_x(1.35 * _eye, _nf + 90), _npc.y + lengthdir_y(5.1, _nf) + lengthdir_y(1.35 * _eye, _nf + 90), 33.5 + _nb, 0.65, 0.65, 0.65, 0);
+            }
         }
     }
 

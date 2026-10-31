@@ -21,3 +21,11 @@
 ## Limitações
 
 Estas alterações usam geometria e cores geradas em GML. Não são materiais PBR nem substituem modelos, mapas de textura, animações ou iluminação avançada. O repositório não inclui o projeto `.yyp` nem assets externos. Para personagens com aparência realista, será necessário criar/importar modelos e texturas no projeto GameMaker.
+# Atualização: correções visuais da captura 2026-10-31
+
+- Corrigido o vetor lateral do WASD no modo 3D (D/Right aponta para o lado da câmera).
+- NPC Marta: removido olho amarelo fora do rosto; cabeça/cabelo agora usam cores humanas, olhos só aparecem de frente sob a lanterna, corpo menor.
+- Piso do mundo: substituído o padrão de tiles grandes por variação tonal discreta em subtiles.
+- Mantidos pinheiros e céu aberto no bioma de floresta.
+
+Limite: a geometria ainda é procedural low-poly. Texturas PBR externas exigem importar sprites/recursos no projeto GameMaker; não há `.yyp` ou pasta de assets no repositório para registrar/importar recursos automaticamente.

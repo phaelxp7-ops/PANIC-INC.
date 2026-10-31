@@ -245,8 +245,9 @@ if (mode == 0) {
     var _st = _kr - _kl;
     var _fx = lengthdir_x(1, player.facing_dir);
     var _fy = lengthdir_y(1, player.facing_dir);
-    var _rx = lengthdir_x(1, player.facing_dir - 90);
-    var _ry = lengthdir_y(1, player.facing_dir - 90);
+    // +90 e o lado direito da camera para a convencao de angulos do GameMaker.
+    var _rx = lengthdir_x(1, player.facing_dir + 90);
+    var _ry = lengthdir_y(1, player.facing_dir + 90);
     _mx = _fx * _fw + _rx * _st;
     _my = _fy * _fw + _ry * _st;
     var _len = point_distance(0, 0, _mx, _my);

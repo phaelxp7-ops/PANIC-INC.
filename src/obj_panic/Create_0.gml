@@ -1065,11 +1065,18 @@ build_3d = function() {
             var _x2 = _x1 + tile; var _y2 = _y1 + tile;
             var _bi = biome[c][r];
             if (grid[c][r] == 0) {
-                var _k = 0.85 + 0.15 * (((c * 7 + r * 13) mod 5) / 4);
-                // Variação por terreno, sem o quadriculado artificial de ladrilho.
-                var _noise = abs((c * 37 + r * 71 + c * r * 13) mod 19) / 100;
-                var _fc = shade(pal_floor[_bi], _k * (0.94 + _noise));
-                vquad(vb_world, _x1,_y1,0, _x2,_y1,0, _x2,_y2,0, _x1,_y2,0, _fc);
+                // Micro-variação em subtiles quebra a repetição de quadrados grandes.
+                var _k = 0.91 + 0.09 * (((c * 7 + r * 13) mod 5) / 4);
+                var _sub = tile * 0.5;
+                for (var _fy = 0; _fy < 2; _fy++) {
+                    for (var _fx = 0; _fx < 2; _fx++) {
+                        var _hash = abs((c * 37 + r * 71 + c * r * 13 + _fx * 17 + _fy * 29) mod 23) / 100;
+                        var _fc = shade(pal_floor[_bi], _k * (0.96 + _hash));
+                        var _sx1 = _x1 + _fx * _sub; var _sy1 = _y1 + _fy * _sub;
+                        var _sx2 = _sx1 + _sub; var _sy2 = _sy1 + _sub;
+                        vquad(vb_world,_sx1,_sy1,0, _sx2,_sy1,0, _sx2,_sy2,0, _sx1,_sy2,0, _fc);
+                    }
+                }
                 // A floresta e externa: sem teto de concreto fechando o ceu.
                 if (_bi != 0) vquad(vb_world, _x1,_y1,wall_h, _x2,_y1,wall_h, _x2,_y2,wall_h, _x1,_y2,wall_h, make_color_rgb(34, 34, 44));
             } else {
@@ -1113,6 +1120,8 @@ vb_hd    = [make_sphere(make_color_rgb(110, 118, 140)), make_sphere(make_color_r
 vb_eye   = make_sphere(make_color_rgb(255, 255, 80));
 vb_npc   = make_sphere(make_color_rgb(54, 67, 62));
 vb_npc_alert = make_sphere(make_color_rgb(88, 24, 30));
+vb_npc_head = make_sphere(make_color_rgb(148, 111, 91));
+vb_npc_hair = make_sphere(make_color_rgb(38, 27, 24));
 vb_boss  = make_sphere(make_color_rgb(130, 10, 20));
 vb_core  = make_sphere(make_color_rgb(255, 50, 50));
 vb_spike = make_spike(make_color_rgb(24, 8, 18));
