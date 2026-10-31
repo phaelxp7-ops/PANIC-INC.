@@ -64,8 +64,9 @@ if (mode == 1 && state != STATE_TITLE && state != STATE_INTRO) {
             draw_box3d(vb_hd[_type], _en.x + lengthdir_x(5, _turn), _en.y + lengthdir_y(5, _turn), _height * 0.84 + _bob, _type == 3 ? 13 : 11, 10, _type == 3 ? 17 : 12, _turn);
             var _face_x = _en.x + lengthdir_x(11, _turn);
             var _face_y = _en.y + lengthdir_y(11, _turn);
+            var _eye_glow = 1 + 0.3 * sin(_en.anim * 0.32);
             for (var _eye_side = -1; _eye_side <= 1; _eye_side += 2) {
-                draw_box3d(vb_core, _face_x + lengthdir_x(3.5 * _eye_side, _turn + 90), _face_y + lengthdir_y(3.5 * _eye_side, _turn + 90), _height * 0.9 + _bob, 2.8, 2.8, 2.8, 0);
+                draw_box3d(vb_core, _face_x + lengthdir_x(3.5 * _eye_side, _turn + 90), _face_y + lengthdir_y(3.5 * _eye_side, _turn + 90), _height * 0.9 + _bob, 3.4 * _eye_glow, 3.4 * _eye_glow, 3.4 * _eye_glow, 0);
             }
             for (var s = -1; s <= 1; s += 2) {
                 var _sx = _en.x + lengthdir_x(7 * s, _turn + 90);
