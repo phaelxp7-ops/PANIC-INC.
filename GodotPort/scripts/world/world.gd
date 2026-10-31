@@ -16,6 +16,7 @@ var _segundos: float = 0.0
 var _timer_spawn: float = 24.0
 var _indice_dialogo_marta: int = 0
 var _chefe: PanicMonster
+var _quedas_recuperadas: Dictionary = {}
 @onready var _jogadores: Node3D = $Jogadores
 @onready var _spawner: MultiplayerSpawner = $MultiplayerSpawner
 
@@ -54,7 +55,27 @@ func _process(delta: float) -> void:
 		hud.atualizar()
 	var jogador_local: PlayerController = _jogador_local()
 	if jogador_local != null:
+		_verificar_queda(jogador_local)
 		_atualizar_regiao(jogador_local.global_position)
+	if multiplayer.is_server():
+		for jogador: Node in _jogadores.get_children():
+			if jogador is PlayerController and jogador != jogador_local:
+				_verificar_queda(jogador as PlayerController)
+
+
+func _verificar_queda(jogador: PlayerController) -> void:
+	if jogador.global_position.y > -50.0:
+		return
+	var destino: Vector3 = INICIO_FLORESTA
+	if jogador.global_position.x > 760.0:
+		destino = Vector3(840.0, -15.0, 14.0)
+	elif jogador.global_position.x > 420.0:
+		destino = Vector3(560.0, 1.0, 3.0)
+	elif jogador.global_position.x > 145.0:
+		destino = Vector3(280.0, 1.0, 3.0)
+	jogador.global_position = destino
+	jogador.velocity = Vector3.ZERO
+	EventBus.mensagem.emit("Queda detectada. Você foi levado ao último setor seguro.", 3.0)
 
 
 func montar_ambiente() -> void:
@@ -90,7 +111,7 @@ func montar_ambiente() -> void:
 	ambiente.fog_depth_begin = 24.0
 	ambiente.fog_depth_end = 145.0
 	ambiente.glow_enabled = false
-	ambiente.ssao_enabled = false
+	ambiente.ssao_enabled = false # indisponível no renderer Mobile
 	ambiente.ssil_enabled = false
 	ambiente.sdfgi_enabled = false
 	_ambiente.environment = ambiente

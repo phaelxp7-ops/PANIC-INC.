@@ -47,6 +47,19 @@ func _montar_chao() -> void:
 	forma.position.y = -0.62
 	corpo.add_child(forma)
 	add_child(corpo)
+	# Plataforma de segurança dedicada no Nível -3: evita fendas entre colisores
+	# e mantém um piso navegável mesmo se a geometria decorativa falhar.
+	if region_id == "subsolo":
+		var piso_seguro: StaticBody3D = StaticBody3D.new()
+		piso_seguro.name = "PisoSeguroSubsolo"
+		piso_seguro.position = centro
+		var piso_forma: CollisionShape3D = CollisionShape3D.new()
+		var caixa: BoxShape3D = BoxShape3D.new()
+		caixa.size = Vector3(tamanho.x, 2.0, tamanho.y)
+		piso_forma.shape = caixa
+		piso_forma.position.y = -1.0
+		piso_seguro.add_child(piso_forma)
+		add_child(piso_seguro)
 
 
 func _material_solo() -> StandardMaterial3D:
