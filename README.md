@@ -1,5 +1,9 @@
 # PANIC-INC.
 
+> O repositório mantém o projeto original GameMaker na raiz e oferece um port
+> experimental separado em [`GodotPort/`](GodotPort/LEIAME.md). Os dois projetos
+> são independentes; o port Godot não substitui nem altera os fontes GameMaker.
+
 ## Visão geral
 
 RPG de terror e sobrevivência no qual Ana atravessa a floresta, Vale Sombrio e as instalações da PANIC INC. para encontrar o irmão Lucas. O protótipo inclui exploração em áreas conectadas, combate e furtividade, documentos de história, personagens, gestão de sanidade e recursos, e um confronto final com dois desfechos. Multiplayer permanece como objetivo futuro, ainda sem rede implementada.
@@ -55,4 +59,18 @@ NPCs, monstros, sanidade, lanterna e chefe. O pós-processamento oferece gradaç
 por região, ACES, extração/composição de brilho e efeitos de terror. F10 alterna
 entre qualidade baixa, média e alta. Leia [`LEIAME.md`](LEIAME.md) para limites
 conhecidos e [`CREDITOS.md`](CREDITOS.md) para as fontes dos materiais.
+
+## Port experimental para Godot 4
+
+O projeto em `GodotPort/` tem campanha, quatro regiões, recursos e documentos,
+NPCs, inimigos, chefe, salvamento e uma camada cooperativa ENet preparada para
+1–4 jogadores. Use `GodotPort/Run_Editor.bat` para abrir no editor e
+`GodotPort/Run_Game.bat` para executar a versão local. Os testes e limites estão
+documentados em [`GodotPort/LEIAME.md`](GodotPort/LEIAME.md).
+
+O executável Windows é gerado em `GodotPort/build/PanicInc.exe`; essa pasta é
+ignorada pelo Git. A campanha passou pelos testes automatizados, mas a validação
+visual nesta máquina com Radeon integrada ainda mostrou um viewport 3D branco,
+inclusive em uma cena mínima de diagnóstico. Por isso, o port continua
+experimental até a renderização 3D ser corrigida ou validada em outro driver/GPU.
 

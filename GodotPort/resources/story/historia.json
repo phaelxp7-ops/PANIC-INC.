@@ -1,0 +1,62 @@
+{
+  "titulo": "PANIC INC. — O Coração do Medo",
+  "protagonista": "Ana Almeida, 28 anos",
+  "premissa": "Ana procura Lucas, seu irmão e técnico noturno da PANIC INC. O Projeto Coração converte medo humano em energia; o reator transformou Vale Sombrio em uma cidade de Esvaziados e prendeu Lucas como âncora.",
+  "regioes": ["Floresta de Pinheiros", "Cidade de Vale Sombrio", "Complexo PANIC INC.", "Subsolo — Nível -3"],
+  "notas": [
+    {"titulo":"Bilhete de Lucas", "texto":"Ana, se você está lendo isto, NÃO venha atrás de mim.\n\nA PANIC INC. não fabrica segurança. Fabrica MEDO.\n\nVou desligar o sistema esta noite. Se eu não voltar... não deixe a luz apagar.\n\n- Lucas"},
+    {"titulo":"Aviso da Guarda Florestal", "texto":"Dia 3 do apagão. O povo da cidade veio para a mata. Estavam... vazios. Não falavam, só andavam em direção à luz.\n\nTranquei o portão da cidade e escondi a chave aqui.\n\nSe você está lendo isto: mantenha a lanterna acesa. A luz os segura."},
+    {"titulo":"Diário do Acampamento", "texto":"Meu filho jurava ver alguém parado entre as árvores. Quando acendi a lanterna, a coisa congelou. Quando desviei o olhar, estava mais perto.\n\nNUNCA desvie o olhar das estátuas pálidas. Elas só se movem quando ninguém está olhando."},
+    {"titulo":"Lápide sem nome", "texto":"AQUI JAZEM OS QUE NÃO PUDERAM GRITAR.\n\nA PANIC INC. pagava a cada família para participar do 'estudo noturno'. Ninguém perguntou o que o estudo era."},
+    {"titulo":"Boletim da Rádio Vale", "texto":"...cidade em quarentena. Não é doença. O que saiu do complexo se alimenta do que você sente. Quanto mais medo, mais fortes eles ficam.\n\nRespire. Fique na luz. Na escuridão total, a sua própria mente começa a mentir para você."},
+    {"titulo":"Relatório da Delegacia", "texto":"O Diretor Voss exigiu o cartão-mestre do complexo. Guardei na sala de evidências.\n\nAs Sombras que andam à noite são o medo que sobrou das vítimas. A luz da lanterna as queima. Mantenha o feixe nelas."},
+    {"titulo":"Receita da Farmácia", "texto":"Os calmantes acabaram. Sobraram algumas pílulas na gaveta.\n\nQuando a sanidade cai, a mente cria monstros que não existem. Se você ver algo que desaparece quando chega perto... não era real."},
+    {"titulo":"Carta na Igreja", "texto":"Rezo por eles toda noite. Alguns vêm até a porta e ficam chorando sem som.\n\nChoram porque ainda lembram quem eram.\n\n- Padre Antônio"},
+    {"titulo":"Memorando PANIC INC. #1", "texto":"PROJETO CORAÇÃO: reator que converte medo humano em energia. Produção 400% acima da meta.\n\nEfeito colateral: sujeitos 'esvaziam' após exposição prolongada.\n\nAprovado pelo Diretor Voss."},
+    {"titulo":"Memorando PANIC INC. #2", "texto":"O sistema precisa de uma ÂNCORA: alguém cujo medo seja forte e constante o bastante para estabilizar o reator.\n\nO técnico Lucas Almeida mostrou-se... compatível.\n\nTransferir para o Nível -3."},
+    {"titulo":"Diário de Lucas", "texto":"Descobri o que fizeram comigo. Eu sou a âncora. Enquanto eu sentir medo, o Coração vive. Se um dia eu parar de ter medo... ele morre.\n\nAna, eu precisava que você viesse. Preciso que você me ajude a não ter medo."},
+    {"titulo":"Gravação do Diretor", "texto":"Eu não sou o monstro, Ana. Sou o futuro.\n\nO medo é a única energia infinita. Você vai me ajudar... ou vai alimentar o Coração como todos os outros."},
+    {"titulo":"Laudo de Autópsia", "texto":"Os esvaziados não têm sangue. Têm vácuo. Reagem à luz como plantas ao sol.\n\nOs rastejantes são os primeiros a esvaziar: rápidos, agitados, frágeis. As Sombras morrem se forem iluminadas por tempo suficiente."},
+    {"titulo":"Terminal do Elevador", "texto":"Elevador para o Nível -3. Requer 3 fusíveis de energia.\n\nOrdem do Diretor: ninguém desce.\n\nEle está lá embaixo. Ele sempre esteve lá embaixo."},
+    {"titulo":"Câmera de Segurança 12", "texto":"Registro: o Diretor aparece e some entre os monitores. Quando ele desaparece, as luzes morrem.\n\nPara vê-lo, só com a lanterna. Para feri-lo... também."}
+  ],
+  "dialogos": {
+    "marta": [
+      ["Marta", "Graças a Deus... uma pessoa de verdade. Você não tem aquele olhar vazio."],
+      ["Ana", "Estou procurando meu irmão, Lucas. Ele trabalhava na PANIC INC."],
+      ["Marta", "Ninguém sai de lá, querida. Desde o apagão, a cidade inteira virou... isso que anda lá fora."],
+      ["Marta", "Pegue este revólver. Tem poucas balas, então use com sabedoria. A luz segura essas coisas. O escuro as traz."],
+      ["Marta", "A Guarda Florestal trancou o portão da cidade. A chave está na estação florestal, ao norte da mata."],
+      ["Marta", "Esta cabana é segura. Eles não entram na luz da lâmpada. Volte aqui sempre que precisar descansar."]
+    ],
+    "tomas": [
+      ["Tomás", "Ei! Você fala! Faz dias que transmito pedindo ajuda e ninguém responde..."],
+      ["Ana", "Preciso entrar no Complexo PANIC INC. Meu irmão está lá."],
+      ["Tomás", "Então precisa do cartão de acesso. Está na delegacia, na sala de evidências. Cuidado: as Sombras só aparecem na luz, e a luz as queima."],
+      ["Tomás", "Leve estas pílulas. Quando a sua sanidade cair, elas ajudam. Eu fico aqui, na luz do rádio."]
+    ],
+    "lucas": [
+      ["Lucas", "Ana... você veio mesmo."],
+      ["Ana", "Lucas! Eu estou aqui, vou te tirar daí!"],
+      ["Lucas", "Eu sou a âncora, Ana. O Coração vive do meu medo. Se eu parar de temer, ele morre... e eu junto."],
+      ["Lucas", "Você pode me levar embora e deixar o Coração vivo. Ou pode desligá-lo e acabar com tudo isso."],
+      ["Lucas", "A escolha é sua. Eu confio em você."]
+    ],
+    "voss": [
+      ["Voss", "Ana Almeida... você chegou mais longe do que todos os outros."],
+      ["Ana", "Onde está o meu irmão?!"],
+      ["Voss", "Aqui. Vivo. Alimentando o Coração com o medo dele... e agora com o seu."],
+      ["Voss", "Eu sou o futuro desta cidade. Venha. Mostre-me o quanto você consegue temer."]
+    ]
+  },
+  "introducao": [
+    "VALE SOMBRIO — 03:12. O rádio do carro repete o alerta de evacuação. A gravação tem a sua voz no fundo. Você ainda não chegou à cidade.",
+    "Seu irmão, Lucas, era técnico noturno na PANIC INC., a empresa que sustentava a cidade.\n\nHoje, um bilhete apareceu embaixo da sua porta. A letra é dele. A data é de amanhã...",
+    "'Ana, se você está lendo isto, NÃO venha atrás de mim.\n\nA PANIC INC. não fabrica segurança. Fabrica MEDO.\n\nVou desligar o sistema esta noite. Se eu não voltar... não deixe a luz apagar.'\n\n- Lucas",
+    "O motor morre. No rádio, Lucas sussurra: 'Ana, não siga a luz.'\n\nDo outro lado da mata, uma cabana acende a lâmpada. Na janela, alguém com o seu rosto observa.\n\nVocê precisa encontrar seu irmão. Mas agora sabe que alguma coisa já esperava por você."
+  ],
+  "finais": {
+    "descanso": "O Coração silencia. As criaturas caem como corpos vazios. Lucas não volta, mas Vale Sombrio pode finalmente dormir.",
+    "eco": "Ana retira Lucas do reator. O Coração continua pulsando sob a cidade, agora mais fraco — e esperando a próxima noite."
+  }
+}

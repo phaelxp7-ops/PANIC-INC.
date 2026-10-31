@@ -35,6 +35,18 @@ Thumbs.db
 # Configuração local do editor
 options/main/template_info.yy
 
+# Godot 4: cache de importação e arquivos locais do editor
+GodotPort/.godot/
+GodotPort/.import/
+GodotPort/export.cfg
+GodotPort/*.translation
+GodotPort/build/
+GodotPort/dist/
+GodotPort/crashes/
+GodotPort/*.log
+GodotPort/*.tmp
+GodotPort/*.bak
+
 # Pacotes brutos de modelos baixados; o protótipo usa apenas os mapas diffuse embutidos.
 src/assets/third_party/opengameart_vivid/
 src/assets/third_party/**/*.blend

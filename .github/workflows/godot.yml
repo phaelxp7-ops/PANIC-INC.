@@ -1,0 +1,28 @@
+name: Godot CI
+
+on:
+  push:
+    branches: [main, "feat/**", "fix/**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: Instalar Godot 4.7.2 e gdtoolkit
+        run: |
+          curl -L --fail --retry 3 -o godot.zip https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip godot.zip -d "$RUNNER_TEMP/godot"
+          chmod +x "$RUNNER_TEMP/godot/Godot_v4.7.2-stable_linux.x86_64"
+          python -m pip install gdtoolkit==4.5.0
+      - name: Importar projeto
+        run: "$RUNNER_TEMP/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --editor --path GodotPort --import --quit"
+      - name: Lint e testes GUT
+        working-directory: GodotPort
+        run: |
+          gdlint scripts tests
+          "$RUNNER_TEMP/godot/Godot_v4.7.2-stable_linux.x86_64" --headless --path . -s addons/gut/gut_cmdln.gd -gexit -gexit_on_success -gdisable_colors

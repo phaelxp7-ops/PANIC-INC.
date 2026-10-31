@@ -1,0 +1,25 @@
+{
+	"gerado_por": "tools/build_world.gd",
+	"regioes": [
+		{
+			"cena": "res://scenes/regions/forest.tscn",
+			"gerador": "res://scripts/world/region_chunk.gd",
+			"raiz": "FlorestaPinheiros"
+		},
+		{
+			"cena": "res://scenes/regions/city.tscn",
+			"gerador": "res://scripts/world/region_chunk.gd",
+			"raiz": "ValeSombrio"
+		},
+		{
+			"cena": "res://scenes/regions/complex.tscn",
+			"gerador": "res://scripts/world/region_chunk.gd",
+			"raiz": "ComplexoPanic"
+		},
+		{
+			"cena": "res://scenes/regions/subsoil.tscn",
+			"gerador": "res://scripts/world/region_chunk.gd",
+			"raiz": "SubsoloNivelTres"
+		}
+	]
+}
