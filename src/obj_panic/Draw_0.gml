@@ -22,8 +22,9 @@ if (mode == 1) {
     var _sway = sin(current_time / 115) * (player.is_running ? 1.25 : 0.65) * _motion;
     var _ez = eye_h + sin(player.bob) * (player.is_running ? 2.8 : 1.5) + sin(current_time / 430) * 0.7;
     var _look_dir = _fd + _sway;
+    var _pitch_target = dsin(camera_pitch) / max(0.84, dcos(camera_pitch));
     var _view = matrix_build_lookat(_ex, _ey, _ez,
-                                    _ex + lengthdir_x(1, _look_dir), _ey + lengthdir_y(1, _look_dir), _ez - 0.6,
+                                    _ex + lengthdir_x(1, _look_dir), _ey + lengthdir_y(1, _look_dir), _ez + _pitch_target,
                                     0, 0, 1);
     var _proj = matrix_build_projection_perspective_fov(-fov, -gw / gh, 1, 2000);
     camera_set_view_mat(cam3d, _view);
