@@ -424,6 +424,19 @@ if (flash_on) {
     gpu_set_blendmode(bm_normal);
 }
 
+// ---------- PULSO VISUAL DO SINALIZADOR ----------
+if (flare_pulse > 0) {
+    var _flare_progress = 1 - flare_pulse / 34;
+    var _flare_radius = 24 + _flare_progress * 220;
+    gpu_set_blendmode(bm_add);
+    draw_set_color(c_aqua);
+    draw_set_alpha((flare_pulse / 34) * 0.9);
+    draw_circle(flare_x, flare_y, _flare_radius, true);
+    draw_circle(flare_x, flare_y, max(2, _flare_radius - 5), true);
+    gpu_set_blendmode(bm_normal);
+    draw_set_alpha(1);
+}
+
 // ---------- PARTICULAS ----------
 for (var i = 0; i < array_length(particles); i++) {
     var _pa = particles[i];
