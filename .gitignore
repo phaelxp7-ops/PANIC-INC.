@@ -34,3 +34,12 @@ Thumbs.db
 
 # Configuração local do editor
 options/main/template_info.yy
+
+# Pacotes brutos de modelos baixados; o protótipo usa apenas os mapas diffuse embutidos.
+src/assets/third_party/opengameart_vivid/
+src/assets/third_party/**/*.blend
+src/assets/third_party/**/*.fbx
+src/assets/marta_materials/preview_*
+src/assets/marta_materials/*.png
+src/assets/third_party/stef_npc/*
+!src/assets/third_party/stef_npc/ladyarms.jpg

@@ -25,7 +25,13 @@ if (mode == 1 && state != STATE_TITLE && state != STATE_INTRO) {
     if (sanity < 30) _fog_end *= 0.8;
     var _fog_col = (cur_biome == 0) ? make_color_rgb(10, 19, 15) : make_color_rgb(13, 16, 23);
     gpu_set_fog(true, _fog_col, 45, max(120, _fog_end));
+    for (var _gb = 0; _gb < 4; _gb++) {
+        if (array_length(vb_floor) > _gb && vb_floor[_gb] != -1) {
+            vertex_submit(vb_floor[_gb], pr_trianglelist, sprite_get_texture(world_surface_tex, 0));
+        }
+    }
     vertex_submit(vb_world, pr_trianglelist, -1);
+    vertex_submit(vb_tree_bark, pr_trianglelist, sprite_get_texture(pine_bark_tex, 0));
 
     // Objetos do cenario sempre flutuam um pouco para continuarem legiveis.
     for (var i = 0; i < array_length(items); i++) {
@@ -41,7 +47,7 @@ if (mode == 1 && state != STATE_TITLE && state != STATE_INTRO) {
         }
     }
 
-    // Silhuetas articuladas: tronco e cabeca organicos, membros separados e movimento.
+    // Criaturas com mapas de pele distintos, focinho, cavidade oral, garras e silhuetas próprias.
     for (var i = 0; i < array_length(enemies); i++) {
         var _en = enemies[i];
         if (point_distance(_en.x, _en.y, player.x, player.y) > 500) continue;
@@ -51,37 +57,75 @@ if (mode == 1 && state != STATE_TITLE && state != STATE_INTRO) {
         var _bob = abs(sin(_en.anim * 0.18)) * (_en.mode == 1 ? 3 : 1);
         var _height = en_h[_type];
         var _width = en_w[_type];
+        var _skin_vb = vb_enemy_skin[_type];
         if (_type == 1) {
-            // O Rastejante se arrasta baixo, com coluna arqueada e bracos longos.
-            draw_box3d(vb_body[_type], _en.x, _en.y, 10 + _bob, 25, 15, 11, _turn);
-            draw_box3d(vb_hd[_type], _en.x + lengthdir_x(16, _turn), _en.y + lengthdir_y(16, _turn), 13 + _bob, 13, 12, 9, _turn);
+            // O Rastejante arrasta o tórax e abre uma mandíbula larga antes do bote.
+            var _lunge = _en.mode == 1 ? 5 + abs(sin(_en.anim * 0.28)) * 7 : 0;
+            draw_textured_box3d(_skin_vb, monster_skin_tex, _en.x, _en.y, 10 + _bob, 29 + _lunge, 16, 10, _turn);
+            draw_textured_box3d(_skin_vb, monster_skin_tex, _en.x + lengthdir_x(17 + _lunge, _turn), _en.y + lengthdir_y(17 + _lunge, _turn), 13 + _bob, 12, 9, 8, _turn);
+            var _jaw_x = _en.x + lengthdir_x(23 + _lunge, _turn);
+            var _jaw_y = _en.y + lengthdir_y(23 + _lunge, _turn);
+            draw_box3d(vb_mouth_dark, _jaw_x, _jaw_y, 10 + _bob, 8, 3, 5 + abs(sin(_en.anim * 0.2)) * 5, _turn);
+            draw_box3d(vb_mouth_wet, _jaw_x + lengthdir_x(1, _turn), _jaw_y + lengthdir_y(1, _turn), 8 + _bob, 4.5, 1.5, 2.2, _turn);
             for (var s = -1; s <= 1; s += 2) {
-                draw_box3d(vb_body[_type], _en.x + lengthdir_x(9 * s, _turn + 90), _en.y + lengthdir_y(9 * s, _turn + 90), 6 + _bob, 21, 4, 5, _turn + 18 * s);
-                draw_box3d(vb_spike, _en.x + lengthdir_x(22, _turn) + lengthdir_x(9 * s, _turn + 90), _en.y + lengthdir_y(22, _turn) + lengthdir_y(9 * s, _turn + 90), 4 + _bob, 5, 5, 10, _turn + 90 * s);
+                var _shoulder_x = _en.x + lengthdir_x(4, _turn) + lengthdir_x(8 * s, _turn + 90);
+                var _shoulder_y = _en.y + lengthdir_y(4, _turn) + lengthdir_y(8 * s, _turn + 90);
+                var _hand_x = _en.x + lengthdir_x(18 + _lunge + _stride * 0.4, _turn) + lengthdir_x(13 * s, _turn + 90);
+                var _hand_y = _en.y + lengthdir_y(18 + _lunge + _stride * 0.4, _turn) + lengthdir_y(13 * s, _turn + 90);
+                draw_textured_box3d(_skin_vb, monster_skin_tex, _shoulder_x, _shoulder_y, 7 + _bob, 18, 5, 5, _turn + 18 * s);
+                draw_textured_box3d(_skin_vb, monster_skin_tex, _hand_x, _hand_y, 4 + _bob, 15, 3.5, 3.5, _turn + 35 * s);
+                draw_box3d(vb_claw, _hand_x + lengthdir_x(7, _turn), _hand_y + lengthdir_y(7, _turn), 3 + _bob, 2.3, 2.3, 7, _turn + 90);
+                draw_box3d(vb_claw, _hand_x + lengthdir_x(8, _turn + 90 * s), _hand_y + lengthdir_y(8, _turn + 90 * s), 3 + _bob, 1.8, 1.8, 5, _turn + 90 * s);
+                // A perna traseira fica dobrada e vibra antes de cada arrancada.
+                draw_textured_box3d(_skin_vb, monster_skin_tex, _en.x - lengthdir_x(7, _turn) + lengthdir_x(7 * s, _turn + 90), _en.y - lengthdir_y(7, _turn) + lengthdir_y(7 * s, _turn + 90), 4 + _bob, 11, 5, 4.5, _turn - 28 * s);
             }
         } else {
-            draw_box3d(vb_body[_type], _en.x, _en.y, _height * 0.43 + _bob, _width * 1.65, _width * 1.25, _height * 0.82, _turn);
-            // Cabeca afundada nos ombros e nucleo vermelho visivel na penumbra.
-            draw_box3d(vb_hd[_type], _en.x + lengthdir_x(5, _turn), _en.y + lengthdir_y(5, _turn), _height * 0.84 + _bob, _type == 3 ? 13 : 11, 10, _type == 3 ? 17 : 12, _turn);
-            var _face_x = _en.x + lengthdir_x(11, _turn);
-            var _face_y = _en.y + lengthdir_y(11, _turn);
-            var _eye_glow = 1 + 0.3 * sin(_en.anim * 0.32);
+            var _torso_w = (_type == 2) ? _width * 1.12 : _width * 1.55;
+            draw_textured_box3d(_skin_vb, monster_skin_tex, _en.x, _en.y, _height * 0.43 + _bob, _torso_w, _width * 0.9, _height * 0.82, _turn);
+            // Cabeça alongada, boca funda e olhos recuados mudam a leitura da silhueta.
+            var _head_x = _en.x + lengthdir_x(_type == 2 ? 7 : 5, _turn);
+            var _head_y = _en.y + lengthdir_y(_type == 2 ? 7 : 5, _turn);
+            draw_textured_box3d(_skin_vb, monster_skin_tex, _head_x, _head_y, _height * 0.84 + _bob, _type == 3 ? 9 : 10, 8, _type == 3 ? 19 : 13, _turn);
+            var _face_x = _en.x + lengthdir_x(_type == 2 ? 12 : 11, _turn);
+            var _face_y = _en.y + lengthdir_y(_type == 2 ? 12 : 11, _turn);
+            var _eye_glow = 0.8 + 0.28 * sin(_en.anim * 0.32);
+            draw_box3d(vb_mouth_dark, _face_x + lengthdir_x(1.8, _turn), _face_y + lengthdir_y(1.8, _turn), _height * 0.76 + _bob, _type == 2 ? 3 : 4, 2.3, _type == 2 ? 7 : 8, _turn);
+            draw_box3d(vb_mouth_wet, _face_x + lengthdir_x(2.6, _turn), _face_y + lengthdir_y(2.6, _turn), _height * 0.73 + _bob, 1.2, 1.1, 3.2, _turn);
             for (var _eye_side = -1; _eye_side <= 1; _eye_side += 2) {
-                draw_box3d(vb_core, _face_x + lengthdir_x(3.5 * _eye_side, _turn + 90), _face_y + lengthdir_y(3.5 * _eye_side, _turn + 90), _height * 0.9 + _bob, 3.4 * _eye_glow, 3.4 * _eye_glow, 3.4 * _eye_glow, 0);
+                var _socket_x = _face_x + lengthdir_x(3.1 * _eye_side, _turn + 90);
+                var _socket_y = _face_y + lengthdir_y(3.1 * _eye_side, _turn + 90);
+                draw_box3d(vb_eyedark, _socket_x, _socket_y, _height * 0.88 + _bob, 3.4, 2.2, 2.6, _turn);
+                if (_type != 2 || flash_on) draw_box3d(vb_core, _socket_x + lengthdir_x(1.0, _turn), _socket_y + lengthdir_y(1.0, _turn), _height * 0.88 + _bob, 1.15 * _eye_glow, 1.0, 1.25 * _eye_glow, _turn);
             }
             for (var s = -1; s <= 1; s += 2) {
                 var _sx = _en.x + lengthdir_x(7 * s, _turn + 90);
                 var _sy = _en.y + lengthdir_y(7 * s, _turn + 90);
-                draw_box3d(vb_body[_type], _sx + lengthdir_x(_stride, _turn), _sy + lengthdir_y(_stride, _turn), _height * 0.48 + _bob, 6, 7, _height * 0.55, _turn + 12 * s);
-                draw_box3d(vb_body[_type], _en.x + lengthdir_x(5 * s, _turn + 90), _en.y + lengthdir_y(5 * s, _turn + 90), _height * 0.16 + _bob, 7, 8, _height * 0.35, _turn - _stride * s);
+                var _arm_x = _sx + lengthdir_x(_stride, _turn);
+                var _arm_y = _sy + lengthdir_y(_stride, _turn);
+                draw_textured_box3d(_skin_vb, monster_skin_tex, _arm_x, _arm_y, _height * 0.48 + _bob, _type == 2 ? 5 : 6, 5, _height * 0.58, _turn + 12 * s);
+                draw_textured_box3d(_skin_vb, monster_skin_tex, _en.x + lengthdir_x(5 * s, _turn + 90), _en.y + lengthdir_y(5 * s, _turn + 90), _height * 0.16 + _bob, 6.5, 6.5, _height * 0.35, _turn - _stride * s);
+                draw_box3d(vb_claw, _arm_x + lengthdir_x(8, _turn), _arm_y + lengthdir_y(8, _turn), _height * 0.21 + _bob + _stride * 0.2, 2.2, 2.2, 8, _turn + 90 * s);
+            }
+            if (_type == 0) {
+                // Costelas escuras atravessam a pele ressecada do Esvaziado.
+                for (var _rib = 0; _rib < 3; _rib++) {
+                    draw_box3d(vb_eyedark, _en.x + lengthdir_x(7.5, _turn), _en.y + lengthdir_y(7.5, _turn), _height * 0.42 + _rib * 4 + _bob, 8, 2.4, 1.5, _turn);
+                }
+            }
+            if (_type == 2) {
+                // A Estátua é alta, sem expressão, e dobra os braços como galhos quebrados.
+                for (var _horn = -1; _horn <= 1; _horn += 2) {
+                    draw_box3d(vb_spike, _head_x + lengthdir_x(3.8 * _horn, _turn + 90), _head_y + lengthdir_y(3.8 * _horn, _turn + 90), _height + 8 + _bob, 3.6, 3.6, 16, _turn + 20 * _horn);
+                }
             }
             if (_type == 3) {
-                draw_box3d(vb_spike, _en.x - lengthdir_x(5, _turn + 90), _en.y - lengthdir_y(5, _turn + 90), _height + 12 + _bob, 8, 8, 22, _turn - 18);
-                draw_box3d(vb_spike, _en.x + lengthdir_x(5, _turn + 90), _en.y + lengthdir_y(5, _turn + 90), _height + 12 + _bob, 8, 8, 22, _turn + 18);
-                draw_box3d(vb_spike, _en.x, _en.y, _height + 16 + _bob, 5, 5, 18, _turn);
-                // Espinhos quebrados ao longo das costas tornam a silhueta legivel de longe.
+                draw_box3d(vb_spike, _en.x - lengthdir_x(5, _turn + 90), _en.y - lengthdir_y(5, _turn + 90), _height + 12 + _bob, 6, 6, 22, _turn - 18);
+                draw_box3d(vb_spike, _en.x + lengthdir_x(5, _turn + 90), _en.y + lengthdir_y(5, _turn + 90), _height + 12 + _bob, 6, 6, 22, _turn + 18);
+                draw_box3d(vb_spike, _en.x, _en.y, _height + 16 + _bob, 4, 4, 19, _turn);
+                // Espinhos quebrados e filamentos laterais se mexem quando a Sombra persegue.
                 for (var _sp = 0; _sp < 4; _sp++) {
-                    draw_box3d(vb_spike, _en.x - lengthdir_x(8 + _sp * 5, _turn), _en.y - lengthdir_y(8 + _sp * 5, _turn), _height * 0.72 + _bob, 6, 7, 18 - _sp * 2, _turn + 90);
+                    var _tail_z = _height * 0.73 + _bob + sin(_en.anim * 0.21 + _sp) * 2;
+                    draw_box3d(vb_spike, _en.x - lengthdir_x(8 + _sp * 5, _turn), _en.y - lengthdir_y(8 + _sp * 5, _turn), _tail_z, 5, 6, 18 - _sp * 2, _turn + 90);
                 }
             }
         }
@@ -90,31 +134,66 @@ if (mode == 1 && state != STATE_TITLE && state != STATE_INTRO) {
         var _npc = npcs[i];
         if (point_distance(_npc.x, _npc.y, player.x, player.y) > 420) continue;
         var _nb = 0.8 * sin(current_time / 200 + i);
-        var _npc_body = (_npc.kind == 3 && _npc.revealed) ? vb_npc_alert : vb_npc;
-        var _nf = _npc.face;
-        var _walk = sin(current_time / 95 + i * 2) * 2;
-        // Silhueta humana compacta, com rosto e cabelo em tons naturais.
-        draw_box3d(_npc_body, _npc.x, _npc.y, 16 + _nb, 8, 6, 15, _nf);
-        draw_box3d(_npc_body, _npc.x + lengthdir_x(1, _nf), _npc.y + lengthdir_y(1, _nf), 25 + _nb, 12, 7, 8, _nf);
-        draw_box3d(vb_npc_head, _npc.x + lengthdir_x(2, _nf), _npc.y + lengthdir_y(2, _nf), 33 + _nb, 5.5, 5.5, 7, _nf);
-        draw_box3d(vb_npc_hair, _npc.x + lengthdir_x(1, _nf), _npc.y + lengthdir_y(1, _nf), 36 + _nb, 5.8, 5.8, 3.5, _nf);
+        var _dist_player = point_distance(_npc.x, _npc.y, player.x, player.y);
+        var _nf = (_npc.name == "Marta" && _dist_player < 150)
+            ? point_direction(_npc.x, _npc.y, player.x, player.y) : _npc.face;
+        var _walk = sin(current_time / 115 + i * 2) * 1.3;
+        var _stride = abs(sin(current_time / 115 + i * 2)) * 1.6;
+        var _forward_x = lengthdir_x(1, _nf); var _forward_y = lengthdir_y(1, _nf);
+        var _right_x = lengthdir_x(1, _nf + 90); var _right_y = lengthdir_y(1, _nf + 90);
+
+        // Marta: silhueta humana mais estreita, com pernas, roupa, mangas e rosto separados.
+        // As texturas de camiseta, jeans e pele vêm dos materiais CC0 empacotados no Create.
+        draw_textured_box3d(vb_npc_denim, marta_tex_denim, _npc.x, _npc.y, 20 + _nb, 7.2, 4.2, 6.5, _nf);
+        draw_textured_box3d(vb_npc_shirt, marta_tex_shirt, _npc.x, _npc.y, 27 + _nb, 8.2, 4.6, 10.5, _nf);
+        draw_textured_box3d(vb_npc_shirt, marta_tex_shirt, _npc.x, _npc.y, 33 + _nb, 9.3, 4.8, 5.3, _nf);
+
+        // Mochila curta e alças distinguem a sobrevivente sem alargar o torso.
+        draw_box3d(vb_npc_pack, _npc.x - _forward_x * 3.2, _npc.y - _forward_y * 3.2, 28 + _nb, 4.5, 2.2, 8.5, _nf);
+        draw_box3d(vb_npc_scarf, _npc.x, _npc.y, 36 + _nb, 3.6, 3.7, 2.0, _nf);
+
         for (var _side = -1; _side <= 1; _side += 2) {
-            draw_box3d(_npc_body, _npc.x + lengthdir_x(5 * _side, _nf + 90), _npc.y + lengthdir_y(5 * _side, _nf + 90), 19 + _nb + _walk * _side, 3, 3.5, 11, _nf + 8 * _side);
-            draw_box3d(vb_body[0], _npc.x + lengthdir_x(2.7 * _side, _nf + 90), _npc.y + lengthdir_y(2.7 * _side, _nf + 90), 5 + _nb - _walk * _side, 3, 3.5, 9, _nf - 8 * _side);
+            var _lx = _npc.x + _right_x * 2.2 * _side;
+            var _ly = _npc.y + _right_y * 2.2 * _side;
+            var _leg_swing = _walk * _side;
+            draw_textured_box3d(vb_npc_denim, marta_tex_denim, _lx + _forward_x * _leg_swing, _ly + _forward_y * _leg_swing, 13 + _nb, 3.0, 3.2, 9.5, _nf + _leg_swing * 1.3);
+            draw_textured_box3d(vb_npc_denim, marta_tex_denim, _lx + _forward_x * _leg_swing * 1.35, _ly + _forward_y * _leg_swing * 1.35, 6 + _nb, 2.55, 2.9, 7.5, _nf + _leg_swing * 1.8);
+            draw_box3d(vb_npc_boot, _lx + _forward_x * 1.1, _ly + _forward_y * 1.1, 2.5 + _nb, 3.1, 4.0, 3.0, _nf);
+
+            var _sx = _npc.x + _right_x * 5.0 * _side;
+            var _sy = _npc.y + _right_y * 5.0 * _side;
+            draw_textured_box3d(vb_npc_shirt, marta_tex_shirt, _sx, _sy, 29 + _nb, 2.8, 3.0, 8.0, _nf + _side * 5);
+            draw_textured_box3d(vb_npc_skin, marta_tex_skin, _sx + _right_x * 0.25 * _side, _sy + _right_y * 0.25 * _side, 22 + _nb + _walk * _side, 2.15, 2.35, 7.2, _nf + _side * 3);
+            draw_textured_box3d(vb_npc_skin, marta_tex_skin, _sx + _right_x * 0.3 * _side, _sy + _right_y * 0.3 * _side, 15.5 + _nb + _walk * _side, 1.9, 2.15, 4.0, _nf);
         }
-        // Um pequeno reflexo ocular identifica a face quando a lanterna a alcança.
+
+        // Pescoço, cabeça oval, cabelo preso e traços faciais visíveis de frente.
+        draw_textured_box3d(vb_npc_skin, marta_tex_skin, _npc.x, _npc.y, 37.8 + _nb, 2.6, 2.7, 3.3, _nf);
+        draw_textured_box3d(vb_npc_skin, marta_tex_skin, _npc.x + _forward_x * 0.2, _npc.y + _forward_y * 0.2, 43 + _nb, 5.0, 4.5, 6.6, _nf);
+        draw_box3d(vb_npc_hair, _npc.x - _forward_x * 0.4, _npc.y - _forward_y * 0.4, 46 + _nb, 5.5, 5.0, 3.3, _nf);
+        draw_box3d(vb_npc_hair, _npc.x - _forward_x * 2.4, _npc.y - _forward_y * 2.4, 40 + _nb, 3.0, 3.2, 9.0, _nf);
+        for (var _face_eye = -1; _face_eye <= 1; _face_eye += 2) {
+            var _ex = _npc.x + _forward_x * 2.25 + _right_x * 1.05 * _face_eye;
+            var _ey = _npc.y + _forward_y * 2.25 + _right_y * 1.05 * _face_eye;
+            draw_box3d(vb_npc_eye, _ex, _ey, 43.5 + _nb, 0.72, 0.55, 0.75, _nf);
+            draw_box3d(vb_npc_brow, _ex + _forward_x * 0.12, _ey + _forward_y * 0.12, 44.6 + _nb, 1.05, 0.42, 0.38, _nf);
+        }
+        draw_textured_box3d(vb_npc_skin, marta_tex_skin, _npc.x + _forward_x * 2.55, _npc.y + _forward_y * 2.55, 42.2 + _nb, 0.9, 0.8, 1.2, _nf);
+        draw_box3d(vb_npc_mouth, _npc.x + _forward_x * 2.32, _npc.y + _forward_y * 2.32, 40.7 + _nb, 1.15, 0.45, 0.55, _nf);
+
+        // Reflexo ocular sutil sob a lanterna, sem os olhos amarelos artificiais antigos.
         var _to_player = point_direction(_npc.x, _npc.y, player.x, player.y);
-        if (flash_on && point_distance(_npc.x, _npc.y, player.x, player.y) < flash_len && abs(angle_difference(_nf, _to_player)) < 65) {
-            for (var _eye = -1; _eye <= 1; _eye += 2) {
-                draw_box3d(vb_eye, _npc.x + lengthdir_x(5.1, _nf) + lengthdir_x(1.35 * _eye, _nf + 90), _npc.y + lengthdir_y(5.1, _nf) + lengthdir_y(1.35 * _eye, _nf + 90), 33.5 + _nb, 0.65, 0.65, 0.65, 0);
+        if (flash_on && _dist_player < flash_len && abs(angle_difference(_nf, _to_player)) < 65) {
+            for (var _flash_eye = -1; _flash_eye <= 1; _flash_eye += 2) {
+                draw_box3d(vb_eye, _npc.x + _forward_x * 2.65 + _right_x * 1.05 * _flash_eye, _npc.y + _forward_y * 2.65 + _right_y * 1.05 * _flash_eye, 43.5 + _nb, 0.28, 0.28, 0.28, 0);
             }
         }
     }
 
-    // O Diretor tem uma massa grande, coroa de espinhos e um nucleo pulsante.
+    // O Diretor usa a pele mais escura do atlas, com veios e núcleo pulsante.
     if (boss != -1) {
         var _pulse = 1 + 0.06 * sin(boss.anim * 0.12);
-        draw_box3d(vb_boss, boss.x, boss.y, 36, 58 * _pulse, 52 * _pulse, 70 * _pulse, boss.face);
+        draw_textured_box3d(vb_enemy_skin[3], monster_skin_tex, boss.x, boss.y, 36, 58 * _pulse, 52 * _pulse, 70 * _pulse, boss.face);
         draw_box3d(vb_core, boss.x + lengthdir_x(25, boss.face), boss.y + lengthdir_y(25, boss.face), 40, 15, 10, 20, current_time * 0.08);
         for (var s = -1; s <= 1; s++) {
             draw_box3d(vb_spike, boss.x + lengthdir_x(12 * s, boss.face + 90), boss.y + lengthdir_y(12 * s, boss.face + 90), 78, 13, 13, 36, boss.face + 15 * s);
@@ -192,20 +271,15 @@ for (var c = _c0; c <= _c1; c++) {
                 fillrect(_x + 13, _y + 6, _x + 19, _y + tile - 6);
             }
         } else {
-            var _noise = abs((c * 37 + r * 71 + c * r * 13) mod 23);
-            draw_set_color(shade(pal_floor[_bio], 0.82 + _noise / 100));
-            fillrect(_x, _y, _x + tile, _y + tile);
-            draw_set_color(shade(pal_floor[_bio], 0.66));
-            if (_bio == 0) {
-                // Folhas e terra: repetiveis por posicao, sem custo de sprites externas.
-                if (_noise mod 3 == 0) draw_circle(_x + 6 + (_noise mod 17), _y + 8 + (_noise mod 15), 2, false);
-                if (_noise mod 5 == 0) draw_line(_x + 5, _y + 25, _x + 15, _y + 21);
-            } else if (_bio == 1) {
-                if (_noise mod 4 == 0) draw_line(_x + 3, _y + 9, _x + 28, _y + 9);
-                if (_noise mod 6 == 0) draw_circle(_x + 21, _y + 23, 2, false);
+            var _variant_2d = abs((c * 37 + r * 71 + c * r * 13 + (c div 3) * 7 + (r div 2) * 11) mod 16);
+            var _mat_col = (_bio mod 2) * 4 + (_variant_2d mod 4);
+            var _mat_row = floor(_bio / 2) * 4 + floor(_variant_2d / 4);
+            var _src_x = _mat_col * 128 + 2; var _src_y = _mat_row * 128 + 2;
+            if (world_surface_tex != -1) {
+                draw_sprite_part_ext(world_surface_tex, 0, _src_x, _src_y, 124, 124, _x, _y, tile / 124, tile / 124, c_white, 1);
             } else {
-                if (_noise mod 4 == 0) draw_line(_x + 4, _y + 25, _x + 24, _y + 8);
-                if (_noise mod 5 == 0) fillrect(_x + 4, _y + 6, _x + 27, _y + 8);
+                draw_set_color(pal_floor[_bio]);
+                fillrect(_x, _y, _x + tile, _y + tile);
             }
         }
         // Sombra gradual para tiles ja vistos, mas fora da visao atual.
