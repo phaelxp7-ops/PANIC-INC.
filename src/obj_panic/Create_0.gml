@@ -1,14 +1,19 @@
 // ============================================================
-// PANIC INC. v3 - obj_panic - CREATE
+// PANIC INC. v4 - "O CORACAO DO MEDO"
+// obj_panic - CREATE
+// Mundo aberto, historia, NPCs, monstros, sanidade e chefe final.
 // ============================================================
 game_set_speed(60, gamespeed_fps);
 randomize();
 
-// ---------- RECORDE SALVO ----------
+// ---------- SAVE (finais vistos e melhor tempo) ----------
 ini_open("panic_save.ini");
-best_pontos = ini_read_real("save", "best", 0);
-best_level  = ini_read_real("save", "level", 1);
+endings_seen = ini_read_real("save", "endings", 0);
+best_time    = ini_read_real("save", "besttime", 0);
 ini_close();
+
+// ---------- FONTE COM ACENTOS ----------
+fnt_main = font_add("Arial", 13, false, false, 32, 383);
 
 // ---------- TELA E CAMERAS ----------
 gw = 1280; gh = 720;
@@ -27,62 +32,84 @@ view_camera[0] = cam2d;
 cam3d = camera_create();
 
 // ---------- ESTADOS ----------
-STATE_TITLE = 0; STATE_PLAYING = 1; STATE_PAUSED = 2; STATE_GAMEOVER = 3; STATE_LEVELDONE = 4;
+STATE_TITLE = 0; STATE_PLAYING = 1; STATE_PAUSED = 2; STATE_GAMEOVER = 3; STATE_DIALOG = 4;
+STATE_READ = 5; STATE_JOURNAL = 6; STATE_MAP = 7; STATE_INTRO = 8; STATE_ENDCHOICE = 9;
+STATE_ENDING = 10; STATE_UPGRADE = 11;
 state = STATE_TITLE;
 mode  = 0;               // 0 = 2D, 1 = 3D (TAB)
+camera_pitch = 0;        // inclinacao vertical da camera em primeira pessoa
+
+// tipos de item
+IT_NOTE = 0; IT_MED = 1; IT_BAT = 2; IT_AMMO = 3; IT_KEY = 4; IT_PILL = 5;
 
 // ---------- CONFIGURACOES ----------
-tile = 32; cols = 52; rows = 36;
+tile = 32; cols = 128; rows = 84;
 wall_h = 64; eye_h = 36; fov = 72;
-mouse_sens = 0.15; mouse_sens_y = 0.12; turn_speed = 2.8;
-camera_pitch = 0;
+mouse_sens = 0.15; turn_speed = 2.8;
 flash_len = 200; flash_angle = 28; ambient_r = 70; ambient_cur = 70;
 ndx  = [1, -1, 0, 0];
 ndy  = [0, 0, 1, -1];
 ndx8 = [1, -1, 0, 0, 1, 1, -1, -1];
 ndy8 = [0, 0, 1, -1, 1, -1, 1, -1];
-item_names = ["DOCUMENTO CONFIDENCIAL", "KIT MEDICO", "BATERIA", "FUSIVEL INDUSTRIAL", "RELIQUIA ANOMALA"];
-objective_names = ["RECUPERAR ARQUIVOS", "RELIGAR GERADORES", "CONTER A ANOMALIA"];
-structure_names = ["ARQUIVO", "ENFERMARIA", "SUBESTACAO", "ABRIGO" ];
 
-// ---------- MELHORIAS (upgrades entre fases) ----------
-speed_mult = 1; stam_mult = 1; batt_mult = 1; hear_mult = 1; extra_pickups = 0;
+// paletas: 0 floresta, 1 cidade, 2 complexo, 3 subsolo, 4 madeira, 5 pedra
+pal_floor = [make_color_rgb(34, 46, 34), make_color_rgb(54, 56, 62), make_color_rgb(46, 58, 74), make_color_rgb(62, 36, 46), make_color_rgb(78, 56, 38), make_color_rgb(40, 48, 38)];
+pal_wall  = [make_color_rgb(22, 62, 30), make_color_rgb(88, 80, 96), make_color_rgb(74, 90, 116), make_color_rgb(98, 52, 64), make_color_rgb(112, 76, 46), make_color_rgb(104, 108, 116)];
+biome_names = ["FLORESTA DE PINHEIROS", "CIDADE DE VALE SOMBRIO", "COMPLEXO PANIC INC.", "SUBSOLO - NÍVEL -3"];
+
+// ---------- MELHORIAS ----------
+speed_mult = 1; stam_mult = 1; batt_mult = 1; hear_mult = 1; dmg_mult = 1; sanity_mult = 1;
 upg_defs = [
     { name : "PERNAS LEVES",       desc : "+12% de velocidade" },
-    { name : "PULMOES DE ACO",     desc : "A stamina dura 40% mais" },
+    { name : "PULMÕES DE AÇO",     desc : "A stamina dura 40% mais" },
     { name : "LANTERNA POTENTE",   desc : "Mais alcance e cone de luz maior" },
-    { name : "BATERIA ECONOMICA",  desc : "A bateria dura 40% mais" },
-    { name : "CORACAO DE FERRO",   desc : "+25 de vida maxima e cura total" },
+    { name : "BATERIA ECONÔMICA",  desc : "A bateria dura 40% mais" },
+    { name : "CORAÇÃO DE FERRO",   desc : "+25 de vida máxima e cura total" },
     { name : "PASSOS FELINOS",     desc : "Monstros te ouvem de menos longe" },
-    { name : "SORTE DE LADRAO",    desc : "+1 kit medico e +1 bateria por fase" }
+    { name : "BALAS PERFURANTES",  desc : "+40% de dano do revólver" },
+    { name : "MENTE FORTE",        desc : "A sanidade cai 35% mais devagar" }
 ];
 upg_choice = [0, 1, 2];
 
-// ---------- VARIAVEIS DE JOGO ----------
-pontos = 0; level = 1;
-battery = 100; flash_on = true; flash_power = 1;
-panic = 0; shake = 0; hurt_flash = 0; heart_pulse = 0;
-msg = ""; msg_timer = 0;
-level_time = 0; last_bonus = 0;
-nearby_item = -1; nearby_npc = -1;
-cam_x = 0; cam_y = 0;
-fade = 1;
-combo = 0; combo_timer = 0;
-blackout = 0; blackout_cd = 2400;
-flare_charges = 2; flare_pulse = 0; flare_x = 0; flare_y = 0;
-alert_cd = 0; heart_cd = 0; step_sign = false; drip_cd = 300; creak_cd = 900;
-jumpscare = 0; jumpscare_type = 0; contract_flash = 0;
-particles = []; enemies = []; items = []; rooms = []; npcs = [];
-lamps = []; decals = []; floaters = []; dust = [];
-vb_world = -1;
-docs_total = 1; docs_got = 0;
-exit_c = 0; exit_r = 0; exit_open = false; alarm_on = false;
-spawn_timer = 0; spawn_interval = 1000; max_enemies = 6;
-sfx_on = true;
+// ============================================================
+// HISTORIA: NOTAS (ids 0 a 14)
+// ============================================================
+notes_data = [];
+add_note = function(_t, _x) { array_push(notes_data, { title : _t, text : _x }); };
+add_note("Bilhete de Lucas", "Ana, se você está lendo isto, NÃO venha atrás de mim.\n\nA PANIC INC. não fabrica segurança. Fabrica MEDO.\n\nVou desligar o sistema esta noite. Se eu não voltar... não deixe a luz apagar.\n\n- Lucas");
+add_note("Aviso da Guarda Florestal", "Dia 3 do apagão. O povo da cidade veio para a mata. Estavam... vazios. Não falavam, só andavam em direção à luz.\n\nTranquei o portão da cidade e escondi a chave aqui.\n\nSe você está lendo isto: mantenha a lanterna acesa. A luz os segura.");
+add_note("Diário do Acampamento", "Meu filho jurava ver alguém parado entre as árvores. Quando acendi a lanterna, a coisa congelou. Quando desviei o olhar, estava mais perto.\n\nNUNCA desvie o olhar das estátuas pálidas. Elas só se movem quando ninguém está olhando.");
+add_note("Lápide sem nome", "AQUI JAZEM OS QUE NÃO PUDERAM GRITAR.\n\nA PANIC INC. pagava a cada família para participar do 'estudo noturno'. Ninguém perguntou o que o estudo era.");
+add_note("Boletim da Rádio Vale", "...cidade em quarentena. Não é doença. O que saiu do complexo se alimenta do que você sente. Quanto mais medo, mais fortes eles ficam.\n\nRespire. Fique na luz. Na escuridão total, a sua própria mente começa a mentir para você.");
+add_note("Relatório da Delegacia", "O Diretor Voss exigiu o cartão-mestre do complexo. Guardei na sala de evidências.\n\nAs Sombras que andam à noite são o medo que sobrou das vítimas. A luz da lanterna as queima. Mantenha o feixe nelas.");
+add_note("Receita da Farmácia", "Os calmantes acabaram. Sobraram algumas pílulas na gaveta.\n\nQuando a sanidade cai, a mente cria monstros que não existem. Se você ver algo que desaparece quando chega perto... não era real.");
+add_note("Carta na Igreja", "Rezo por eles toda noite. Alguns vêm até a porta e ficam chorando sem som.\n\nChoram porque ainda lembram quem eram.\n\n- Padre Antônio");
+add_note("Memorando PANIC INC. #1", "PROJETO CORAÇÃO: reator que converte medo humano em energia. Produção 400% acima da meta.\n\nEfeito colateral: sujeitos 'esvaziam' após exposição prolongada.\n\nAprovado pelo Diretor Voss.");
+add_note("Memorando PANIC INC. #2", "O sistema precisa de uma ÂNCORA: alguém cujo medo seja forte e constante o bastante para estabilizar o reator.\n\nO técnico Lucas Almeida mostrou-se... compatível.\n\nTransferir para o Nível -3.");
+add_note("Diário de Lucas", "Descobri o que fizeram comigo. Eu sou a âncora. Enquanto eu sentir medo, o Coração vive. Se um dia eu parar de ter medo... ele morre.\n\nAna, eu precisava que você viesse. Preciso que você me ajude a não ter medo.");
+add_note("Gravação do Diretor", "Eu não sou o monstro, Ana. Sou o futuro.\n\nO medo é a única energia infinita. Você vai me ajudar... ou vai alimentar o Coração como todos os outros.");
+add_note("Laudo de Autópsia", "Os esvaziados não têm sangue. Têm vácuo. Reagem à luz como plantas ao sol.\n\nOs rastejantes são os primeiros a esvaziar: rápidos, agitados, frágeis. As Sombras morrem se forem iluminadas por tempo suficiente.");
+add_note("Terminal do Elevador", "Elevador para o Nível -3. Requer 3 fusíveis de energia.\n\nOrdem do Diretor: ninguém desce.\n\nEle está lá embaixo. Ele sempre esteve lá embaixo.");
+add_note("Câmera de Segurança 12", "Registro: o Diretor aparece e some entre os monitores. Quando ele desaparece, as luzes morrem.\n\nPara vê-lo, só com a lanterna. Para feri-lo... também.");
 
-// olhos decorativos da tela de titulo
+intro_pages = [
+    "Vale Sombrio, 3h12 da madrugada.\n\nHá três noites a cidade inteira está sem energia. Ninguém atende o telefone. Ninguém sai de casa.",
+    "Seu irmão, Lucas, era técnico noturno na PANIC INC., a empresa que sustentava a cidade.\n\nHoje, um bilhete apareceu embaixo da sua porta...",
+    "'Ana, se você está lendo isto, NÃO venha atrás de mim.\n\nA PANIC INC. não fabrica segurança. Fabrica MEDO.\n\nVou desligar o sistema esta noite. Se eu não voltar... não deixe a luz apagar.'\n\n- Lucas",
+    "Você dirigiu a noite toda. O carro morreu no fim da estrada, no meio da mata.\n\nAo longe, uma única luz de cabana ainda está acesa.\n\nVocê não vai voltar sem o seu irmão."
+];
+intro_i = 0; intro_t = 0;
+
+// ---------- VARIAVEIS DE ESTADO ----------
+dlg_lines = []; dlg_i = 0; dlg_t = 0; dlg_after = 0;
+read_note = 0; jr_sel = 0; ending = 0; end_t = 0; end_text = "";
+msg = ""; msg_timer = 0; zone_name = ""; zone_timer = 0;
+sfx_on = true;
+near_lamps = []; vis_prev = [];
+nearby_kind = -1; nearby_idx = -1; prompt = "";
+cam_x = 0; cam_y = 0;
 title_eyes = [];
-repeat (14) array_push(title_eyes, { x : random(gw), y : random(gh), ph : random(360), s : random_range(0.6, 1.6) });
+repeat (16) array_push(title_eyes, { x : random(gw), y : random(gh), ph : random(360), s : random_range(0.6, 1.6) });
 
 // ---------- PLAYER ----------
 player = {
@@ -96,14 +123,15 @@ player = {
     facing_dir : 0,
     hp : 100, hp_max : 100,
     stamina : 100, stamina_max : 100, exhausted : false,
-    rank : 1, xp : 0, xp_next : 5,
-    hurt_cd : 0,
+    hurt_cd : 0, shoot_cd : 0,
     bob : 0
 };
 
 // ============================================================
 // FUNCOES UTEIS
 // ============================================================
+tc = function(_c) { return _c * tile + tile / 2; };
+
 shade = function(_c, _k) {
     return make_color_rgb(
         clamp(round(color_get_red(_c)   * _k), 0, 255),
@@ -130,7 +158,7 @@ solid_at = function(_x, _y) {
     var _c = floor(_x / tile);
     var _r = floor(_y / tile);
     if (_c < 0 || _r < 0 || _c >= cols || _r >= rows) return true;
-    return grid[_c][_r] == 1;
+    return grid[_c][_r] >= 1;
 };
 
 box_hits = function(_x, _y, _h) {
@@ -165,7 +193,6 @@ los = function(_x1, _y1, _x2, _y2) {
     return true;
 };
 
-// Comprimento de um raio ate bater na parede (usado no feixe da lanterna)
 ray_len = function(_x, _y, _dir, _max) {
     var _l = 0;
     while (_l < _max) {
@@ -175,7 +202,7 @@ ray_len = function(_x, _y, _dir, _max) {
     return _l;
 };
 
-// Brilho (0..1) de um ponto: ambiente + lanterna + lampadas
+// brilho (0..1) de um ponto: ambiente + lanterna + lampadas proximas + tiro
 light_at = function(_x, _y) {
     var _d = point_distance(_x, _y, player.x, player.y);
     var _b = clamp(1 - _d / ambient_cur, 0, 1);
@@ -188,17 +215,30 @@ light_at = function(_x, _y) {
             _b = max(_b, _f * _edge * flash_power);
         }
     }
-    for (var k = 0; k < array_length(lamps); k++) {
-        var _l = lamps[k];
-        if (abs(_x - _l.x) < 120 && abs(_y - _l.y) < 120) {
-            var _ld = point_distance(_x, _y, _l.x, _l.y);
-            if (_ld < 120) {
-                var _q = 1 - _ld / 120;
-                _b = max(_b, _q * _q * 0.8 * _l.on);
-            }
+    if (muzzle > 0) _b = max(_b, clamp(1 - _d / 170, 0, 1) * 0.9);
+    for (var k = 0; k < array_length(near_lamps); k++) {
+        var _l = near_lamps[k];
+        var _ld = point_distance(_x, _y, _l.x, _l.y);
+        if (_ld < 120) {
+            var _q = 1 - _ld / 120;
+            _b = max(_b, _q * _q * 0.8 * _l.on);
         }
     }
     return clamp(_b, 0, 1);
+};
+
+in_safe = function(_x, _y) {
+    for (var i = 0; i < array_length(safes); i++) {
+        if (point_distance(_x, _y, safes[i].x, safes[i].y) < safes[i].r) return i;
+    }
+    return -1;
+};
+
+lamp_near = function(_x, _y, _r) {
+    for (var i = 0; i < array_length(lamps); i++) {
+        if (lamps[i].on > 0.5 && point_distance(_x, _y, lamps[i].x, lamps[i].y) < _r) return true;
+    }
+    return false;
 };
 
 show_msg = function(_t, _frames) {
@@ -266,10 +306,6 @@ snd_heart = make_snd(0.45, function(_t, _d) {
     var _b = (_t2 > 0) ? sin(2 * pi * 46 * _t2) * exp(-_t2 * 18) * 0.7 : 0;
     return (_a + _b) * 0.9;
 });
-snd_alarm = make_snd(1.0, function(_t, _d) {
-    var _f = ((floor(_t * 4) mod 2) == 0) ? 620 : 840;
-    return ((sin(2 * pi * _f * _t) > 0) ? 1 : -1) * 0.22;
-});
 snd_drone = make_snd(4, function(_t, _d) {
     var _w = 2 * pi;
     var _l = 0.6 + 0.4 * sin(_w * 0.25 * _t);
@@ -308,92 +344,530 @@ snd_creak = make_snd(1.0, function(_t, _d) {
 snd_blackout = make_snd(0.6, function(_t, _d) {
     return (sin(2 * pi * (200 - 300 * _t) * _t) * 0.5 + (random(2) - 1) * 0.3) * exp(-_t * 5);
 });
+snd_shot = make_snd(0.4, function(_t, _d) {
+    return (random(2) - 1) * 0.8 * exp(-_t * 22) + sin(2 * pi * 85 * _t) * 0.9 * exp(-_t * 14);
+});
+snd_whisper = make_snd(1.4, function(_t, _d) {
+    var _env = sin(pi * _t / _d);
+    var _syl = 0.5 + 0.5 * sin(2 * pi * 4.5 * _t);
+    return (random(2) - 1) * 0.28 * _env * _syl + sin(2 * pi * (260 + 90 * sin(2 * pi * 1.7 * _t)) * _t) * 0.05 * _env;
+});
+snd_door = make_snd(0.7, function(_t, _d) {
+    return (sin(2 * pi * (110 - 70 * _t) * _t) * 0.7 + (random(2) - 1) * 0.25 * exp(-_t * 30)) * exp(-_t * 5);
+});
+snd_roar = make_snd(1.8, function(_t, _d) {
+    var _env = sin(pi * _t / _d);
+    var _f = 42 + 22 * sin(2 * pi * 3.2 * _t);
+    var _saw = ((_t * _f) mod 1) * 2 - 1;
+    return (_saw * 0.55 + (random(2) - 1) * 0.35) * _env;
+});
+snd_stone = make_snd(0.6, function(_t, _d) {
+    return (random(2) - 1) * 0.35 * sin(pi * _t / _d) * (0.5 + 0.5 * sin(2 * pi * 38 * _t));
+});
+snd_heal = make_snd(0.5, function(_t, _d) {
+    var _f = 440 + 500 * _t / _d;
+    return sin(2 * pi * _f * _t) * 0.4 * sin(pi * _t / _d);
+});
+snd_boss_mus = make_snd(6, function(_t, _d) {
+    var _w = 2 * pi;
+    var _b = (_t * 2.4) mod 1;
+    var _s = sin(_w * 49 * _t) * 0.5 * exp(-_b * 4) + sin(_w * 98 * _t) * 0.2 * exp(-_b * 6);
+    var _st = ((floor(_t * 0.8) mod 2) == 0) ? 1 : 1.0595;
+    var _m = 0.5 + 0.5 * sin(_w * 0.4 * _t);
+    _s += sin(_w * 220 * _st * _t) * 0.06 * _m + sin(_w * 233 * _st * _t) * 0.06 * _m;
+    return _s;
+});
 
 audio_master_gain(0.9);
 drone_inst = audio_play_sound(snd_drone, 1, true);
 audio_sound_gain(drone_inst, 0.3, 0);
-
-hurt_player = function(_dmg) {
-    if (player.hurt_cd > 0) return;
-    player.hp = max(0, player.hp - _dmg);
-    player.hurt_cd = 68;
-    shake = 10;
-    hurt_flash = 1;
-    combo = 0;
-    combo_timer = 0;
-    add_particles(player.x, player.y, 14, c_red, 2.5);
-    play_snd(snd_hurt, 0.8, random_range(0.9, 1.1));
-    array_push(decals, { x : player.x + random_range(-10, 10), y : player.y + random_range(-10, 10), r : random_range(3, 8) });
-    if (array_length(decals) > 40) array_delete(decals, 0, 1);
-};
+boss_mus_inst = -1;
 
 // ============================================================
-// GERACAO DO MAPA
+// GERACAO DO MUNDO
 // ============================================================
-carve_rect = function(_c1, _r1, _c2, _r2) {
+carve_rect = function(_c1, _r1, _c2, _r2, _bio) {
     for (var i = max(1, _c1); i <= min(cols - 2, _c2); i++) {
         for (var j = max(1, _r1); j <= min(rows - 2, _r2); j++) {
             grid[i][j] = 0;
+            if (_bio >= 0) biome[i][j] = _bio;
         }
     }
 };
 
-connect_rooms = function(_a, _b) {
+carve_disc = function(_cx, _cy, _rad, _bio) {
+    for (var i = _cx - _rad; i <= _cx + _rad; i++) {
+        for (var j = _cy - _rad; j <= _cy + _rad; j++) {
+            if (i < 1 || j < 1 || i > cols - 2 || j > rows - 2) continue;
+            if (point_distance(i, j, _cx, _cy) <= _rad) {
+                grid[i][j] = 0;
+                if (_bio >= 0) biome[i][j] = _bio;
+            }
+        }
+    }
+};
+
+carve_path = function(_x1, _y1, _x2, _y2, _w, _bio) {
+    var _x = _x1;
+    var _y = _y1;
+    var _guard = 0;
+    while ((abs(_x - _x2) > 1 || abs(_y - _y2) > 1) && _guard < 900) {
+        _guard++;
+        carve_disc(round(_x), round(_y), _w, _bio);
+        var _d = point_direction(_x, _y, _x2, _y2) + random_range(-40, 40);
+        _x += lengthdir_x(1, _d);
+        _y += lengthdir_y(1, _d);
+    }
+    carve_disc(_x2, _y2, _w, _bio);
+};
+
+connect_rooms = function(_a, _b, _bio) {
     var _ax = _a.x + _a.w div 2;
     var _ay = _a.y + _a.h div 2;
     var _bx = _b.x + _b.w div 2;
     var _by = _b.y + _b.h div 2;
-    carve_rect(min(_ax, _bx), _ay, max(_ax, _bx), _ay + 1);
-    carve_rect(_bx, min(_ay, _by), _bx + 1, max(_ay, _by));
+    carve_rect(min(_ax, _bx), _ay, max(_ax, _bx), _ay + 1, _bio);
+    carve_rect(_bx, min(_ay, _by), _bx + 1, max(_ay, _by), _bio);
 };
 
-random_floor = function(_fx, _fy, _mind) {
-    for (var t = 0; t < 400; t++) {
-        var _c = irandom_range(1, cols - 2);
-        var _r = irandom_range(1, rows - 2);
-        if (grid[_c][_r] == 0) {
-            var _px = _c * tile + tile / 2;
-            var _py = _r * tile + tile / 2;
-            if (point_distance(_px, _py, _fx, _fy) >= _mind * (1 - t / 400)) {
-                return { x : _px, y : _py };
+gen_forest = function() {
+    for (var c = 1; c <= 46; c++) {
+        for (var r = 1; r <= 82; r++) {
+            grid[c][r] = (random(1) < 0.42) ? 1 : 0;
+            biome[c][r] = 0;
+        }
+    }
+    repeat (4) {
+        var _tmp = array_create(cols);
+        for (var i = 0; i < cols; i++) _tmp[i] = array_create(rows, 1);
+        for (var c = 1; c <= 46; c++) {
+            for (var r = 1; r <= 82; r++) {
+                var _n = 0;
+                for (var k = 0; k < 8; k++) _n += grid[c + ndx8[k]][r + ndy8[k]];
+                _tmp[c][r] = (_n >= 5) ? 1 : 0;
             }
         }
+        for (var c = 1; c <= 46; c++) {
+            for (var r = 1; r <= 82; r++) grid[c][r] = _tmp[c][r];
+        }
+    }
+    // clareiras e trilhas
+    carve_disc(9, 42, 9, 0);
+    carve_disc(30, 12, 7, 0);
+    carve_disc(36, 62, 6, 0);
+    carve_disc(18, 68, 7, 0);
+    carve_disc(25, 30, 4, 0);
+    carve_disc(45, 40, 4, 0);
+    carve_path(14, 42, 29, 16, 2, 0);
+    carve_path(14, 42, 36, 62, 2, 0);
+    carve_path(14, 42, 45, 40, 2, 0);
+    carve_path(36, 62, 18, 68, 2, 0);
+    carve_path(30, 12, 45, 40, 2, 0);
+    carve_path(25, 30, 14, 42, 2, 0);
+    carve_path(36, 62, 45, 40, 2, 0);
+    // muro de fronteira com a cidade
+    for (var r = 1; r <= 82; r++) { grid[47][r] = 1; biome[47][r] = 0; }
+
+    // CABANA (madeira)
+    for (var c = 5; c <= 13; c++) {
+        for (var r = 38; r <= 46; r++) {
+            var _edge = (c == 5 || c == 13 || r == 38 || r == 46);
+            grid[c][r] = _edge ? 1 : 0;
+            biome[c][r] = 4;
+        }
+    }
+    for (var r = 41; r <= 43; r++) grid[13][r] = 0;
+    // ESTACAO FLORESTAL
+    for (var c = 26; c <= 34; c++) {
+        for (var r = 8; r <= 15; r++) {
+            var _edge2 = (c == 26 || c == 34 || r == 8 || r == 15);
+            grid[c][r] = _edge2 ? 1 : 0;
+            biome[c][r] = 4;
+        }
+    }
+    for (var c = 29; c <= 31; c++) grid[c][15] = 0;
+    // CEMITERIO (lapides de pedra)
+    for (var gx = 0; gx < 3; gx++) {
+        for (var gy = 0; gy < 3; gy++) {
+            grid[14 + gx * 4][64 + gy * 3] = 1;
+            biome[14 + gx * 4][64 + gy * 3] = 5;
+        }
+    }
+    // FOGUEIRA
+    grid[36][62] = 1;
+    biome[36][62] = 5;
+};
+
+gen_town = function() {
+    for (var c = 48; c <= 86; c++) {
+        for (var r = 2; r <= 81; r++) { grid[c][r] = 0; biome[c][r] = 1; }
+    }
+    var _rects = [];
+    for (var bx = 51; bx <= 75; bx += 12) {
+        for (var by = 4; by <= 69; by += 13) {
+            array_push(_rects, { x : bx, y : by, w : irandom_range(8, 9), h : irandom_range(7, 8), role : -1, door_top : false });
+        }
+    }
+    // papeis: 0 delegacia, 1 radio, 2 farmacia, 3 igreja, 4 loja de armas
+    var _idx = [];
+    for (var i = 0; i < array_length(_rects); i++) array_push(_idx, i);
+    for (var i = 0; i < 5; i++) {
+        var _p = irandom(array_length(_idx) - 1);
+        _rects[_idx[_p]].role = i;
+        array_delete(_idx, _p, 1);
+    }
+    bld = _rects;
+    for (var i = 0; i < array_length(_rects); i++) {
+        var _b = _rects[i];
+        if (_b.role < 0 && random(1) < 0.15) continue;
+        for (var c = _b.x; c < _b.x + _b.w; c++) {
+            for (var r = _b.y; r < _b.y + _b.h; r++) {
+                var _edge = (c == _b.x || c == _b.x + _b.w - 1 || r == _b.y || r == _b.y + _b.h - 1);
+                grid[c][r] = _edge ? 1 : 0;
+            }
+        }
+        var _top = (random(1) < 0.5);
+        var _dr = _top ? _b.y : _b.y + _b.h - 1;
+        var _dc = _b.x + _b.w div 2 - 1;
+        grid[_dc][_dr] = 0;
+        grid[_dc + 1][_dr] = 0;
+        _b.door_top = _top;
+        repeat (irandom_range(1, 3)) {
+            var _fc = irandom_range(_b.x + 2, _b.x + _b.w - 3);
+            var _fr = irandom_range(_b.y + 2, _b.y + _b.h - 3);
+            grid[_fc][_fr] = 1;
+        }
+        var _ccx = _b.x + _b.w div 2;
+        var _ccy = _b.y + _b.h div 2;
+        for (var dx = -1; dx <= 1; dx++) {
+            for (var dy = -1; dy <= 1; dy++) grid[_ccx + dx][_ccy + dy] = 0;
+        }
+    }
+    // carros abandonados nas ruas
+    repeat (16) {
+        var _c = irandom_range(49, 85);
+        var _r = irandom_range(3, 80);
+        if (_c < 51 && abs(_r - 40) < 4) continue;
+        if (_c > 83 && abs(_r - 27) < 4) continue;
+        var _ok = true;
+        for (var dx = -1; dx <= 2; dx++) {
+            for (var dy = -1; dy <= 1; dy++) {
+                if (grid[clamp(_c + dx, 0, cols - 1)][clamp(_r + dy, 0, rows - 1)] != 0) _ok = false;
+            }
+        }
+        if (_ok) { grid[_c][_r] = 1; grid[_c + 1][_r] = 1; }
+    }
+};
+
+gen_facility = function() {
+    frooms = [];
+    array_push(frooms, { x : 88,  y : 23, w : 7, h : 9 });   // saguao
+    array_push(frooms, { x : 104, y : 44, w : 7, h : 8 });   // sala do elevador
+    var _tries = 0;
+    while (array_length(frooms) < 11 && _tries < 800) {
+        _tries++;
+        var _w = irandom_range(6, 10);
+        var _h = irandom_range(5, 8);
+        var _cx = irandom_range(96, 125 - _w);
+        var _cy = irandom_range(3, 50 - _h);
+        var _ok = true;
+        for (var k = 0; k < array_length(frooms); k++) {
+            var _o = frooms[k];
+            if (_cx < _o.x + _o.w + 2 && _cx + _w + 2 > _o.x && _cy < _o.y + _o.h + 2 && _cy + _h + 2 > _o.y) {
+                _ok = false;
+                break;
+            }
+        }
+        if (_ok) array_push(frooms, { x : _cx, y : _cy, w : _w, h : _h });
+    }
+    for (var k = 0; k < array_length(frooms); k++) {
+        var _rm = frooms[k];
+        carve_rect(_rm.x, _rm.y, _rm.x + _rm.w - 1, _rm.y + _rm.h - 1, 2);
+    }
+    var _ord = [];
+    for (var k = 0; k < array_length(frooms); k++) array_push(_ord, frooms[k]);
+    for (var a = 0; a < array_length(_ord) - 1; a++) {
+        for (var b2 = 0; b2 < array_length(_ord) - 1 - a; b2++) {
+            if (_ord[b2].x > _ord[b2 + 1].x) {
+                var _tmp = _ord[b2];
+                _ord[b2] = _ord[b2 + 1];
+                _ord[b2 + 1] = _tmp;
+            }
+        }
+    }
+    for (var k = 1; k < array_length(_ord); k++) connect_rooms(_ord[k - 1], _ord[k], 2);
+    repeat (4) connect_rooms(frooms[irandom(array_length(frooms) - 1)], frooms[irandom(array_length(frooms) - 1)], 2);
+    // pilares
+    for (var k = 2; k < array_length(frooms); k++) {
+        var _rp = frooms[k];
+        if (random(1) < 0.7) grid[_rp.x + 1][_rp.y + _rp.h - 2] = 1;
+        if (random(1) < 0.7) grid[_rp.x + _rp.w - 2][_rp.y + 1] = 1;
+    }
+    // corredor do elevador
+    carve_rect(106, 52, 108, 52, 2);
+};
+
+gen_underground = function() {
+    carve_rect(106, 54, 108, 59, 3);
+    carve_rect(94, 60, 120, 80, 3);
+    var _px = [99, 114, 99, 114];
+    var _py = [65, 65, 74, 74];
+    for (var k = 0; k < 4; k++) {
+        for (var dx = 0; dx < 2; dx++) {
+            for (var dy = 0; dy < 2; dy++) grid[_px[k] + dx][_py[k] + dy] = 1;
+        }
+    }
+    // reator (nucleo)
+    for (var c = 106; c <= 108; c++) {
+        for (var r = 77; r <= 79; r++) grid[c][r] = 1;
+    }
+};
+
+add_gate = function(_c1, _r1, _c2, _r2, _need, _name, _bio) {
+    for (var c = _c1; c <= _c2; c++) {
+        for (var r = _r1; r <= _r2; r++) { grid[c][r] = 2; biome[c][r] = _bio; }
+    }
+    array_push(gates, { c1 : _c1, r1 : _r1, c2 : _c2, r2 : _r2, need : _need, name : _name, open : false,
+                        x : ((_c1 + _c2) / 2) * tile + tile / 2, y : ((_r1 + _r2) / 2) * tile + tile / 2 });
+};
+
+compute_reach = function() {
+    spots = [[], [], [], [], [], []];
+    var _seen = array_create(cols);
+    for (var i = 0; i < cols; i++) _seen[i] = array_create(rows, 0);
+    var _q = array_create(cols * rows, 0);
+    var _head = 0;
+    var _tail = 0;
+    _seen[10][42] = 1;
+    _q[0] = 10 + 42 * cols;
+    _tail = 1;
+    while (_head < _tail) {
+        var _cur = _q[_head];
+        _head++;
+        var _cc = _cur mod cols;
+        var _cr = _cur div cols;
+        if (grid[_cc][_cr] == 0) array_push(spots[biome[_cc][_cr]], _cur);
+        for (var k = 0; k < 4; k++) {
+            var _nc = _cc + ndx[k];
+            var _nr = _cr + ndy[k];
+            if (_nc < 0 || _nr < 0 || _nc >= cols || _nr >= rows) continue;
+            if (grid[_nc][_nr] == 1 || _seen[_nc][_nr] == 1) continue;
+            _seen[_nc][_nr] = 1;
+            _q[_tail] = _nc + _nr * cols;
+            _tail++;
+        }
+    }
+};
+
+pick_spot = function(_b, _fx, _fy, _mind) {
+    var _l = spots[_b];
+    var _n = array_length(_l);
+    if (_n == 0) return { x : _fx, y : _fy };
+    for (var t = 0; t < 200; t++) {
+        var _k = _l[irandom(_n - 1)];
+        var _px = (_k mod cols) * tile + tile / 2;
+        var _py = (_k div cols) * tile + tile / 2;
+        if (point_distance(_px, _py, _fx, _fy) >= _mind * (1 - t / 200)) return { x : _px, y : _py };
     }
     return { x : _fx, y : _fy };
 };
 
-// Tipos: 0 = normal, 1 = corredor (rapido), 2 = perseguidor (congela na luz)
-spawn_enemy = function(_mind) {
-    var _p = random_floor(player.x, player.y, _mind);
-    var _zone_danger = 0.15;
-    var _zone_dist = 1000000;
-    for (var k = 0; k < array_length(rooms); k++) {
-        var _room = rooms[k];
-        var _rd = point_distance(_p.x, _p.y, (_room.x + _room.w * 0.5) * tile, (_room.y + _room.h * 0.5) * tile);
-        if (_rd < _zone_dist) { _zone_dist = _rd; _zone_danger = _room.danger; }
-    }
-    var _threat = clamp(level + floor(_zone_danger * 3), 1, 24);
-    var _r = random(1);
-    var _type = 0;
-    if (_threat >= 3 && _zone_danger > 0.42 && _r > 0.91) _type = 3;
-    else if (_threat >= 2 && _r < min(0.48, 0.16 + _zone_danger * 0.30 + max(0, level - 3) * 0.018)) _type = 1;
-    else if (_threat >= 3 && _r > max(0.52, 0.84 - _zone_danger * 0.24 - max(0, level - 4) * 0.015)) _type = 2;
-    var _spd = min(2.2, 0.72 + _threat * 0.065 + _zone_danger * 0.15) + random_range(-0.06, 0.06);
-    if (_type == 1) _spd *= 1.32;
-    if (_type == 2) _spd *= 1.14;
-    if (_type == 3) _spd *= 1.08;
-    array_push(enemies, {
-        x : _p.x, y : _p.y, spd : _spd, type : _type, danger : _zone_danger,
-        face : random(360), anim : random(360), lit : false,
-        mode : 0, wdir : random(360), wt : irandom_range(30, 90), lost : 0, stun : 0,
-        stalk_cd : irandom_range(360, 720)
-    });
+// ---------- objetos do mundo ----------
+place_item = function(_x, _y, _type, _sub, _note) {
+    array_push(items, { x : _x, y : _y, type : _type, sub : _sub, note : _note, timer : random(360) });
 };
 
-update_visibility = function() {
-    for (var i = 0; i < cols; i++) {
-        for (var j = 0; j < rows; j++) vis[i][j] = 0;
+add_lamp = function(_x, _y, _col, _broken) {
+    array_push(lamps, { x : _x, y : _y, on : 1, broken : _broken, col : _col });
+};
+
+add_safe = function(_x, _y, _r, _name, _rx, _ry) {
+    array_push(safes, { x : _x, y : _y, r : _r, name : _name, rx : _rx, ry : _ry, visited : false });
+};
+
+spawn_enemy_at = function(_type, _x, _y) {
+    var _spd = 1;
+    var _hp = 50;
+    var _rad = 10;
+    switch (_type) {
+        case 0: _spd = 0.95; _hp = 60; _rad = 11; break;
+        case 1: _spd = 1.9;  _hp = 28; _rad = 8;  break;
+        case 2: _spd = 2.5;  _hp = 85; _rad = 11; break;
+        case 3: _spd = 1.15; _hp = 45; _rad = 10; break;
     }
+    var _e = {
+        x : _x, y : _y, type : _type, spd : _spd * random_range(0.92, 1.08),
+        hp : _hp, hpmax : _hp, rad : _rad,
+        face : random(360), anim : random(360), lit : false,
+        mode : 0, wdir : random(360), wt : irandom_range(30, 90), lost : 0,
+        lurch : irandom(120), lunge : 0, flash : 0, summoned : false
+    };
+    array_push(enemies, _e);
+    return _e;
+};
+
+populate_world = function() {
+    items = []; enemies = []; npcs = []; lamps = []; safes = [];
+
+    // ---------------- FLORESTA ----------------
+    add_lamp(tc(9), tc(42), make_color_rgb(255, 200, 120), false);
+    add_safe(tc(9), tc(42), 170, "Cabana", tc(10), tc(42));
+    array_push(npcs, { x : tc(11), y : tc(41), kind : 0, name : "Marta", face : 180 });
+    add_lamp(tc(30), tc(12), make_color_rgb(255, 200, 120), true);
+    place_item(tc(30), tc(12), IT_KEY, 0, -1);
+    place_item(tc(28), tc(10), IT_NOTE, 0, 1);
+    add_lamp(tc(36), tc(62), make_color_rgb(255, 140, 50), false);
+    add_safe(tc(36), tc(62), 120, "Fogueira", tc(36), tc(64));
+    place_item(tc(34), tc(60), IT_NOTE, 0, 2);
+    place_item(tc(38), tc(64), IT_MED, 0, -1);
+    place_item(tc(18), tc(68), IT_NOTE, 0, 3);
+    place_item(tc(16), tc(70), IT_AMMO, 0, -1);
+    place_item(tc(20), tc(66), IT_AMMO, 0, -1);
+    place_item(tc(25), tc(30), IT_PILL, 0, -1);
+    repeat (2) { var _p = pick_spot(0, tc(9), tc(42), 400); place_item(_p.x, _p.y, IT_MED, 0, -1); }
+    repeat (2) { var _p = pick_spot(0, tc(9), tc(42), 400); place_item(_p.x, _p.y, IT_BAT, 0, -1); }
+    repeat (2) { var _p = pick_spot(0, tc(9), tc(42), 400); place_item(_p.x, _p.y, IT_AMMO, 0, -1); }
+    repeat (6) { var _p = pick_spot(0, tc(9), tc(42), 600); spawn_enemy_at(0, _p.x, _p.y); }
+    repeat (3) { var _p = pick_spot(0, tc(9), tc(42), 600); spawn_enemy_at(1, _p.x, _p.y); }
+    repeat (2) { var _p = pick_spot(0, tc(9), tc(42), 700); spawn_enemy_at(2, _p.x, _p.y); }
+
+    // ---------------- CIDADE ----------------
+    for (var i = 0; i < array_length(bld); i++) {
+        var _b = bld[i];
+        var _cx = _b.x + _b.w div 2;
+        var _cy = _b.y + _b.h div 2;
+        switch (_b.role) {
+            case 0:
+                place_item(tc(_cx), tc(_cy), IT_KEY, 1, -1);
+                place_item(tc(_cx + 1), tc(_cy), IT_NOTE, 0, 5);
+                add_lamp(tc(_cx), tc(_cy), make_color_rgb(200, 220, 255), true);
+                break;
+            case 1:
+                array_push(npcs, { x : tc(_cx), y : tc(_cy), kind : 1, name : "Tomás", face : 90 });
+                place_item(tc(_cx + 1), tc(_cy + 1), IT_NOTE, 0, 4);
+                add_lamp(tc(_cx), tc(_cy), make_color_rgb(255, 200, 120), false);
+                add_safe(tc(_cx), tc(_cy), 150, "Rádio Vale", tc(_cx - 1), tc(_cy));
+                break;
+            case 2:
+                place_item(tc(_cx), tc(_cy), IT_NOTE, 0, 6);
+                place_item(tc(_cx + 1), tc(_cy), IT_MED, 0, -1);
+                place_item(tc(_cx - 1), tc(_cy), IT_MED, 0, -1);
+                place_item(tc(_cx), tc(_cy + 1), IT_PILL, 0, -1);
+                place_item(tc(_cx), tc(_cy - 1), IT_PILL, 0, -1);
+                add_lamp(tc(_cx), tc(_cy), make_color_rgb(180, 255, 200), true);
+                break;
+            case 3:
+                place_item(tc(_cx), tc(_cy), IT_NOTE, 0, 7);
+                add_lamp(tc(_cx), tc(_cy - 1), make_color_rgb(255, 190, 110), false);
+                break;
+            case 4:
+                place_item(tc(_cx - 1), tc(_cy), IT_AMMO, 0, -1);
+                place_item(tc(_cx), tc(_cy), IT_AMMO, 0, -1);
+                place_item(tc(_cx + 1), tc(_cy), IT_AMMO, 0, -1);
+                place_item(tc(_cx), tc(_cy + 1), IT_AMMO, 0, -1);
+                break;
+        }
+    }
+    repeat (3) { var _p = pick_spot(1, tc(60), tc(40), 0); place_item(_p.x, _p.y, IT_BAT, 0, -1); }
+    repeat (2) { var _p = pick_spot(1, tc(60), tc(40), 0); place_item(_p.x, _p.y, IT_MED, 0, -1); }
+    repeat (3) { var _p = pick_spot(1, tc(60), tc(40), 0); place_item(_p.x, _p.y, IT_AMMO, 0, -1); }
+    repeat (14) { var _p = pick_spot(1, tc(60), tc(40), 0); add_lamp(_p.x, _p.y, make_color_rgb(255, 215, 150), (random(1) < 0.4)); }
+    repeat (5) { var _p = pick_spot(1, tc(48), tc(40), 300); spawn_enemy_at(0, _p.x, _p.y); }
+    repeat (4) { var _p = pick_spot(1, tc(48), tc(40), 300); spawn_enemy_at(1, _p.x, _p.y); }
+    repeat (3) { var _p = pick_spot(1, tc(48), tc(40), 300); spawn_enemy_at(2, _p.x, _p.y); }
+    repeat (3) { var _p = pick_spot(1, tc(48), tc(40), 300); spawn_enemy_at(3, _p.x, _p.y); }
+
+    // ---------------- COMPLEXO ----------------
+    var _lb = frooms[0];
+    var _el = frooms[1];
+    add_lamp(tc(_lb.x + _lb.w div 2), tc(_lb.y + _lb.h div 2), make_color_rgb(190, 230, 255), false);
+    add_safe(tc(_lb.x + _lb.w div 2), tc(_lb.y + _lb.h div 2), 150, "Saguão do Complexo", tc(_lb.x + _lb.w div 2 - 1), tc(_lb.y + _lb.h div 2));
+    place_item(tc(_lb.x + _lb.w div 2 + 1), tc(_lb.y + _lb.h div 2 + 1), IT_NOTE, 0, 14);
+    add_lamp(tc(_el.x + _el.w div 2), tc(_el.y + _el.h div 2), make_color_rgb(190, 230, 255), false);
+    add_safe(tc(_el.x + _el.w div 2), tc(_el.y + _el.h div 2), 130, "Sala do Elevador", tc(_el.x + _el.w div 2 - 1), tc(_el.y + _el.h div 2));
+    place_item(tc(_el.x + _el.w div 2 - 2), tc(_el.y + _el.h div 2), IT_NOTE, 0, 13);
+    var _free = [];
+    for (var k = 2; k < array_length(frooms); k++) array_push(_free, frooms[k]);
+    for (var k = array_length(_free) - 1; k > 0; k--) {
+        var _j = irandom(k);
+        var _tmp = _free[k];
+        _free[k] = _free[_j];
+        _free[_j] = _tmp;
+    }
+    var _nf = array_length(_free);
+    for (var k = 0; k < _nf; k++) {
+        var _rm = _free[k];
+        add_lamp(tc(_rm.x + _rm.w div 2), tc(_rm.y + _rm.h div 2), make_color_rgb(190, 230, 255), (random(1) < 0.35));
+    }
+    for (var k = 0; k < 3; k++) {
+        var _rf = _free[k mod _nf];
+        place_item(tc(_rf.x + _rf.w div 2), tc(_rf.y + _rf.h div 2), IT_KEY, 2, -1);
+    }
+    var _nid = [8, 9, 12];
+    for (var k = 0; k < 3; k++) {
+        var _rn = _free[(k + 3) mod _nf];
+        place_item(tc(_rn.x + _rn.w div 2 + 1), tc(_rn.y + _rn.h div 2), IT_NOTE, 0, _nid[k]);
+    }
+    repeat (2) { var _p = pick_spot(2, tc(91), tc(27), 0); place_item(_p.x, _p.y, IT_MED, 0, -1); }
+    repeat (2) { var _p = pick_spot(2, tc(91), tc(27), 0); place_item(_p.x, _p.y, IT_BAT, 0, -1); }
+    repeat (3) { var _p = pick_spot(2, tc(91), tc(27), 0); place_item(_p.x, _p.y, IT_AMMO, 0, -1); }
+    repeat (2) { var _p = pick_spot(2, tc(91), tc(27), 0); place_item(_p.x, _p.y, IT_PILL, 0, -1); }
+    repeat (4) { var _p = pick_spot(2, tc(91), tc(27), 350); spawn_enemy_at(0, _p.x, _p.y); }
+    repeat (4) { var _p = pick_spot(2, tc(91), tc(27), 350); spawn_enemy_at(1, _p.x, _p.y); }
+    repeat (3) { var _p = pick_spot(2, tc(91), tc(27), 350); spawn_enemy_at(2, _p.x, _p.y); }
+    repeat (3) { var _p = pick_spot(2, tc(91), tc(27), 350); spawn_enemy_at(3, _p.x, _p.y); }
+
+    // ---------------- SUBSOLO ----------------
+    place_item(tc(107), tc(56), IT_NOTE, 0, 10);
+    place_item(tc(107), tc(61), IT_NOTE, 0, 11);
+    var _lx = [101, 112, 101, 112];
+    var _ly = [67, 67, 72, 72];
+    for (var k = 0; k < 4; k++) add_lamp(tc(_lx[k]), tc(_ly[k]), make_color_rgb(255, 40, 40), false);
+};
+
+generate_world = function() {
+    grid = array_create(cols); biome = array_create(cols); explored = array_create(cols);
+    vis = array_create(cols); flow = array_create(cols); flow_st = array_create(cols);
+    for (var i = 0; i < cols; i++) {
+        grid[i]     = array_create(rows, 1);
+        biome[i]    = array_create(rows, 0);
+        explored[i] = array_create(rows, 0);
+        vis[i]      = array_create(rows, 0);
+        flow[i]     = array_create(rows, 0);
+        flow_st[i]  = array_create(rows, 0);
+    }
+    flow_q = array_create(cols * rows, 0);
+    flow_stamp = 0;
+    vis_prev = [];
+    // bioma de cada regiao (paredes incluidas): floresta, cidade, complexo, subsolo
+    for (var c = 0; c < cols; c++) {
+        for (var r = 0; r < rows; r++) {
+            if (c <= 47) biome[c][r] = 0;
+            else if (c <= 87) biome[c][r] = 1;
+            else biome[c][r] = (r <= 52) ? 2 : 3;
+        }
+    }
+    gates = [];
+    seal_on = false;
+
+    gen_forest();
+    gen_town();
+    gen_facility();
+    gen_underground();
+    add_gate(47, 39, 47, 41, 0, "Portão da cidade", 1);
+    add_gate(87, 26, 87, 28, 1, "Porta do Complexo", 2);
+    add_gate(106, 53, 108, 53, 2, "Elevador", 3);
+    compute_reach();
+    populate_world();
+};
+
+// ---------- visao e pathfinding ----------
+update_visibility = function() {
+    for (var i = 0; i < array_length(vis_prev); i++) {
+        var _k = vis_prev[i];
+        vis[_k mod cols][_k div cols] = 0;
+    }
+    vis_prev = [];
     var _pc = floor(player.x / tile);
     var _pr = floor(player.y / tile);
     var _R = 9;
@@ -401,58 +875,69 @@ update_visibility = function() {
     var _r0 = max(0, _pr - _R); var _r1 = min(rows - 1, _pr + _R);
     for (var c = _c0; c <= _c1; c++) {
         for (var r = _r0; r <= _r1; r++) {
-            if (grid[c][r] == 0 && los(player.x, player.y, c * tile + tile / 2, r * tile + tile / 2)) vis[c][r] = 1;
-        }
-    }
-    for (var c = _c0; c <= _c1; c++) {
-        for (var r = _r0; r <= _r1; r++) {
-            if (grid[c][r] == 1) {
-                for (var k = 0; k < 8; k++) {
-                    var _nc = c + ndx8[k];
-                    var _nr = r + ndy8[k];
-                    if (_nc >= 0 && _nr >= 0 && _nc < cols && _nr < rows) {
-                        if (grid[_nc][_nr] == 0 && vis[_nc][_nr] == 1) { vis[c][r] = 1; break; }
-                    }
-                }
+            if (grid[c][r] == 0 && los(player.x, player.y, c * tile + tile / 2, r * tile + tile / 2)) {
+                vis[c][r] = 1;
+                array_push(vis_prev, c + r * cols);
             }
         }
     }
     for (var c = _c0; c <= _c1; c++) {
         for (var r = _r0; r <= _r1; r++) {
-            if (vis[c][r] == 1) explored[c][r] = 1;
+            if (grid[c][r] >= 1) {
+                for (var k = 0; k < 8; k++) {
+                    var _nc = c + ndx8[k];
+                    var _nr = r + ndy8[k];
+                    if (_nc >= 0 && _nr >= 0 && _nc < cols && _nr < rows) {
+                        if (grid[_nc][_nr] == 0 && vis[_nc][_nr] == 1) {
+                            vis[c][r] = 1;
+                            array_push(vis_prev, c + r * cols);
+                            break;
+                        }
+                    }
+                }
+            }
         }
+    }
+    for (var i = 0; i < array_length(vis_prev); i++) {
+        var _k2 = vis_prev[i];
+        explored[_k2 mod cols][_k2 div cols] = 1;
     }
 };
 
 update_flow = function() {
-    for (var i = 0; i < cols; i++) {
-        for (var j = 0; j < rows; j++) flow[i][j] = -1;
-    }
+    flow_stamp++;
     var _pc = floor(player.x / tile);
     var _pr = floor(player.y / tile);
     if (_pc < 0 || _pr < 0 || _pc >= cols || _pr >= rows) return;
-    if (grid[_pc][_pr] == 1) return;
+    if (grid[_pc][_pr] >= 1) return;
     var _head = 0;
-    var _tail = 0;
+    var _tail = 1;
     flow[_pc][_pr] = 0;
-    flow_q[_tail] = _pc + _pr * cols;
-    _tail++;
+    flow_st[_pc][_pr] = flow_stamp;
+    flow_q[0] = _pc + _pr * cols;
     while (_head < _tail) {
         var _cur = flow_q[_head];
         _head++;
         var _cc = _cur mod cols;
         var _cr = _cur div cols;
         var _d = flow[_cc][_cr];
+        if (_d >= 45) continue;
         for (var k = 0; k < 4; k++) {
             var _nc = _cc + ndx[k];
             var _nr = _cr + ndy[k];
             if (_nc < 0 || _nr < 0 || _nc >= cols || _nr >= rows) continue;
-            if (grid[_nc][_nr] == 1 || flow[_nc][_nr] != -1) continue;
+            if (grid[_nc][_nr] >= 1 || flow_st[_nc][_nr] == flow_stamp) continue;
+            flow_st[_nc][_nr] = flow_stamp;
             flow[_nc][_nr] = _d + 1;
             flow_q[_tail] = _nc + _nr * cols;
             _tail++;
         }
     }
+};
+
+flow_val = function(_c, _r) {
+    if (flow_st[_c][_r] != flow_stamp) return -1;
+    return flow[_c][_r];
 };
 
 // ============================================================
@@ -488,31 +973,26 @@ make_box = function(_c) {
     return _vb;
 };
 
-draw_box3d = function(_vb, _x, _y, _z, _sx, _sy, _sz, _rz) {
-    matrix_set(matrix_world, matrix_build(_x, _y, _z, 0, 0, _rz, _sx, _sy, _sz));
-    vertex_submit(_vb, pr_trianglelist, -1);
-    matrix_set(matrix_world, matrix_build_identity());
-};
-
-// Malhas organicas low-poly: volumes arredondados com facetamento e cor por anel.
+// Malhas arredondadas reutilizaveis para que os inimigos nao parecam caixas.
 make_sphere = function(_c) {
     var _vb = vertex_create_buffer();
     vertex_begin(_vb, vf);
-    var _lat_steps = 8;
-    var _lon_steps = 12;
-    for (var _lat = 0; _lat < _lat_steps; _lat++) {
-        var _a0 = -pi * 0.5 + pi * _lat / _lat_steps;
-        var _a1 = -pi * 0.5 + pi * (_lat + 1) / _lat_steps;
-        var _z0 = sin(_a0) * 0.5;
-        var _z1 = sin(_a1) * 0.5;
-        var _r0 = cos(_a0) * 0.5;
-        var _r1 = cos(_a1) * 0.5;
-        for (var _lon = 0; _lon < _lon_steps; _lon++) {
-            var _t0 = 2 * pi * _lon / _lon_steps;
-            var _t1 = 2 * pi * (_lon + 1) / _lon_steps;
-            var _shade = 0.62 + 0.38 * (1 - abs((_lat / _lat_steps) - 0.5));
-            vquad(_vb, cos(_t0)*_r0, sin(_t0)*_r0, _z0, cos(_t1)*_r0, sin(_t1)*_r0, _z0,
-                        cos(_t1)*_r1, sin(_t1)*_r1, _z1, cos(_t0)*_r1, sin(_t0)*_r1, _z1, shade(_c, _shade));
+    var _rings = 8;
+    var _sides = 12;
+    for (var _lat = 0; _lat < _rings; _lat++) {
+        var _a0 = -90 + 180 * _lat / _rings;
+        var _a1 = -90 + 180 * (_lat + 1) / _rings;
+        for (var _lon = 0; _lon < _sides; _lon++) {
+            var _b0 = 360 * _lon / _sides;
+            var _b1 = 360 * (_lon + 1) / _sides;
+            var _x00 = dcos(_a0) * dcos(_b0); var _y00 = dcos(_a0) * dsin(_b0); var _z00 = dsin(_a0);
+            var _x10 = dcos(_a0) * dcos(_b1); var _y10 = dcos(_a0) * dsin(_b1); var _z10 = dsin(_a0);
+            var _x01 = dcos(_a1) * dcos(_b0); var _y01 = dcos(_a1) * dsin(_b0); var _z01 = dsin(_a1);
+            var _x11 = dcos(_a1) * dcos(_b1); var _y11 = dcos(_a1) * dsin(_b1); var _z11 = dsin(_a1);
+            var _shade = 0.72 + 0.28 * max(0, dsin(_a1));
+            var _col = shade(_c, _shade);
+            vv(_vb, _x00, _y00, _z00, _col); vv(_vb, _x10, _y10, _z10, _col); vv(_vb, _x11, _y11, _z11, _col);
+            vv(_vb, _x00, _y00, _z00, _col); vv(_vb, _x11, _y11, _z11, _col); vv(_vb, _x01, _y01, _z01, _col);
         }
     }
     vertex_end(_vb);
@@ -523,40 +1003,32 @@ make_sphere = function(_c) {
 make_spike = function(_c) {
     var _vb = vertex_create_buffer();
     vertex_begin(_vb, vf);
-    for (var _i = 0; _i < 10; _i++) {
-        var _a0 = 2 * pi * _i / 10;
-        var _a1 = 2 * pi * (_i + 1) / 10;
-        vv(_vb, cos(_a0)*0.5, sin(_a0)*0.5, -0.5, shade(_c, 0.65));
-        vv(_vb, cos(_a1)*0.5, sin(_a1)*0.5, -0.5, shade(_c, 0.8));
-        vv(_vb, 0, 0, 0.5, _c);
+    for (var _i = 0; _i < 8; _i++) {
+        var _a0 = _i * 45;
+        var _a1 = (_i + 1) * 45;
+        var _x0 = dcos(_a0) * 0.5; var _y0 = dsin(_a0) * 0.5;
+        var _x1 = dcos(_a1) * 0.5; var _y1 = dsin(_a1) * 0.5;
+        vv(_vb, _x0, _y0, -0.5, shade(_c, 0.6));
+        vv(_vb, _x1, _y1, -0.5, shade(_c, 0.6));
+        vv(_vb, 0, 0, 0.5, shade(_c, 1.25));
     }
     vertex_end(_vb);
     vertex_freeze(_vb);
     return _vb;
 };
 
-wall_face = function(_ax, _ay, _bx, _by, _k, _theme) {
-    var _base = make_color_rgb(120, 125, 150);
-    if (_theme == 1) _base = make_color_rgb(105, 145, 125);
-    else if (_theme == 2) _base = make_color_rgb(155, 112, 78);
-    else if (_theme == 3) _base = make_color_rgb(135, 125, 105);
+draw_box3d = function(_vb, _x, _y, _z, _sx, _sy, _sz, _rz) {
+    matrix_set(matrix_world, matrix_build(_x, _y, _z, 0, 0, _rz, _sx, _sy, _sz));
+    vertex_submit(_vb, pr_trianglelist, -1);
+    matrix_set(matrix_world, matrix_build_identity());
+};
+
+wall_face = function(_ax, _ay, _bx, _by, _k, _base, _door) {
     var _hh = wall_h;
+    var _band = _door ? make_color_rgb(255, 170, 40) : shade(_base, 0.5);
     vquad(vb_world, _ax,_ay,0,   _bx,_by,0,   _bx,_by,14,      _ax,_ay,14,      shade(_base, _k * 0.55));
     vquad(vb_world, _ax,_ay,14,  _bx,_by,14,  _bx,_by,_hh-6,   _ax,_ay,_hh-6,   shade(_base, _k));
-    vquad(vb_world, _ax,_ay,_hh-6, _bx,_by,_hh-6, _bx,_by,_hh, _ax,_ay,_hh,     shade(make_color_rgb(200, 60, 50), _k * 0.8));
-    // Painel metalico fino: quebra a repeticao das paredes sem exigir sprites externos.
-    var _len = point_distance(_ax, _ay, _bx, _by);
-    if (_len > 30) {
-        var _mx = (_ax + _bx) * 0.5;
-        var _my = (_ay + _by) * 0.5;
-        var _dx = (_bx - _ax) / _len;
-        var _dy = (_by - _ay) / _len;
-        var _px = -_dy * 1.2;
-        var _py = _dx * 1.2;
-        vquad(vb_world, _mx-_dx*7-_px,_my-_dy*7-_py,20, _mx+_dx*7-_px,_my+_dy*7-_py,20,
-              _mx+_dx*7-_px,_my+_dy*7-_py,wall_h-12, _mx-_dx*7-_px,_my-_dy*7-_py,wall_h-12,
-              shade(make_color_rgb(125, 135, 150), _k * 0.72));
-    }
+    vquad(vb_world, _ax,_ay,_hh-6, _bx,_by,_hh-6, _bx,_by,_hh, _ax,_ay,_hh,     shade(_band, _k * 0.9));
 };
 
 build_3d = function() {
@@ -567,37 +1039,20 @@ build_3d = function() {
         for (var r = 0; r < rows; r++) {
             var _x1 = c * tile; var _y1 = r * tile;
             var _x2 = _x1 + tile; var _y2 = _y1 + tile;
-            var _theme = 0;
-            var _room_dist = 1000000;
-            for (var q = 0; q < array_length(rooms); q++) {
-                var _candidate = rooms[q];
-                var _qd = point_distance(c + 0.5, r + 0.5, _candidate.x + _candidate.w * 0.5, _candidate.y + _candidate.h * 0.5);
-                if (_qd < _room_dist) { _room_dist = _qd; _theme = _candidate.theme; }
-            }
+            var _bi = biome[c][r];
             if (grid[c][r] == 0) {
-                var _k = 0.82 + 0.18 * (((c * 7 + r * 13) mod 5) / 4);
+                var _k = 0.85 + 0.15 * (((c * 7 + r * 13) mod 5) / 4);
                 var _chk = (((c + r) mod 2) == 0) ? 1.0 : 0.88;
-                var _floor_base = make_color_rgb(95, 100, 112);
-                if (_theme == 1) _floor_base = make_color_rgb(82, 112, 96);
-                else if (_theme == 2) _floor_base = make_color_rgb(120, 83, 58);
-                else if (_theme == 3) _floor_base = make_color_rgb(112, 105, 83);
-                var _fc = shade(_floor_base, _k * _chk);
+                var _fc = shade(pal_floor[_bi], _k * _chk * 1.5);
                 vquad(vb_world, _x1,_y1,0, _x2,_y1,0, _x2,_y2,0, _x1,_y2,0, _fc);
-                // Faixas de piso e grelhas de drenagem para dar escala e leitura ao corredor.
-                if (((c * 13 + r * 7) mod 9) == 0) {
-                    var _gc = shade(make_color_rgb(55, 62, 72), _k);
-                    vquad(vb_world, _x1+5,_y1+7,0.35, _x1+tile-5,_y1+7,0.35, _x1+tile-5,_y1+9,0.35, _x1+5,_y1+9,0.35, _gc);
-                    vquad(vb_world, _x1+5,_y1+23,0.35, _x1+tile-5,_y1+23,0.35, _x1+tile-5,_y1+25,0.35, _x1+5,_y1+25,0.35, _gc);
-                } else if (((c * 5 + r * 11) mod 17) == 0) {
-                    var _stain = shade(make_color_rgb(72, 27, 31), _k * 0.72);
-                    vquad(vb_world, _x1+8,_y1+15,0.25, _x1+18,_y1+13,0.25, _x1+22,_y1+18,0.25, _x1+10,_y1+20,0.25, _stain);
-                }
-                vquad(vb_world, _x1,_y1,wall_h, _x2,_y1,wall_h, _x2,_y2,wall_h, _x1,_y2,wall_h, make_color_rgb(40, 40, 52));
+                vquad(vb_world, _x1,_y1,wall_h, _x2,_y1,wall_h, _x2,_y2,wall_h, _x1,_y2,wall_h, make_color_rgb(34, 34, 44));
             } else {
-                if (r > 0 && grid[c][r - 1] == 0)           wall_face(_x1, _y1, _x2, _y1, 0.95, _theme);
-                if (r < rows - 1 && grid[c][r + 1] == 0)    wall_face(_x1, _y2, _x2, _y2, 0.70, _theme);
-                if (c > 0 && grid[c - 1][r] == 0)           wall_face(_x1, _y1, _x1, _y2, 0.80, _theme);
-                if (c < cols - 1 && grid[c + 1][r] == 0)    wall_face(_x2, _y1, _x2, _y2, 0.60, _theme);
+                var _dr = (grid[c][r] == 2);
+                var _wb = pal_wall[_bi];
+                if (r > 0 && grid[c][r - 1] == 0)           wall_face(_x1, _y1, _x2, _y1, 0.95, _wb, _dr);
+                if (r < rows - 1 && grid[c][r + 1] == 0)    wall_face(_x1, _y2, _x2, _y2, 0.70, _wb, _dr);
+                if (c > 0 && grid[c - 1][r] == 0)           wall_face(_x1, _y1, _x1, _y2, 0.80, _wb, _dr);
+                if (c < cols - 1 && grid[c + 1][r] == 0)    wall_face(_x2, _y1, _x2, _y2, 0.60, _wb, _dr);
             }
         }
     }
@@ -605,234 +1060,560 @@ build_3d = function() {
     vertex_freeze(vb_world);
 };
 
-vb_doc   = make_box(make_color_rgb(255, 220, 60));
-vb_med   = make_box(make_color_rgb(80, 255, 120));
-vb_bat   = make_box(make_color_rgb(80, 220, 255));
-vb_fuse  = make_box(make_color_rgb(255, 145, 40));
-vb_relic = make_box(make_color_rgb(205, 70, 255));
+vb_world = -1;
+vb_it    = [make_box(make_color_rgb(240, 235, 200)), make_box(make_color_rgb(80, 255, 120)), make_box(make_color_rgb(80, 220, 255)),
+            make_box(make_color_rgb(255, 180, 60)), make_box(make_color_rgb(255, 220, 60)), make_box(make_color_rgb(200, 120, 255))];
 vb_lamp  = make_box(make_color_rgb(255, 230, 150));
-vb_body  = [make_sphere(make_color_rgb(120, 20, 25)), make_sphere(make_color_rgb(100, 40, 140)), make_sphere(make_color_rgb(200, 200, 215)), make_sphere(make_color_rgb(18, 12, 20))];
-vb_hd    = [make_sphere(make_color_rgb(190, 50, 50)), make_sphere(make_color_rgb(160, 80, 210)), make_sphere(make_color_rgb(240, 240, 250)), make_sphere(make_color_rgb(45, 10, 18))];
-vb_eye   = make_box(make_color_rgb(255, 255, 80));
-vb_eye_watcher = make_box(make_color_rgb(255, 24, 42));
-vb_spike = make_spike(make_color_rgb(90, 8, 18));
-vb_npc_body = make_sphere(make_color_rgb(45, 92, 132));
-vb_npc_head = make_sphere(make_color_rgb(185, 145, 112));
-vb_npc_traitor = make_sphere(make_color_rgb(66, 18, 30));
-vb_exit_open = make_box(make_color_rgb(60, 255, 90));
-vb_exit_lock = make_box(make_color_rgb(200, 40, 40));
+vb_body  = [make_sphere(make_color_rgb(70, 76, 100)), make_sphere(make_color_rgb(110, 50, 36)), make_sphere(make_color_rgb(215, 215, 225)), make_sphere(make_color_rgb(40, 20, 60))];
+vb_hd    = [make_sphere(make_color_rgb(110, 118, 140)), make_sphere(make_color_rgb(150, 70, 50)), make_sphere(make_color_rgb(240, 240, 250)), make_sphere(make_color_rgb(70, 40, 100))];
+vb_eye   = make_sphere(make_color_rgb(255, 255, 80));
+vb_npc   = make_sphere(make_color_rgb(190, 110, 130));
+vb_boss  = make_sphere(make_color_rgb(130, 10, 20));
+vb_core  = make_sphere(make_color_rgb(255, 50, 50));
+vb_spike = make_spike(make_color_rgb(24, 8, 18));
+en_h = [36, 14, 42, 40];
+en_w = [13, 14, 12, 10];
 
 // ============================================================
-// FASES
+// RPG: ITENS, INVENTARIO, DIALOGOS, PORTOES
 // ============================================================
-generate_level = function() {
-    audio_stop_sound(snd_alarm);
-
-    // Cada contrato abre um complexo maior, com mais salas e mais rotas.
-    cols = min(128, 96 + max(0, level - 1) * 5);
-    rows = min(90, 68 + max(0, level - 1) * 4);
-
-    grid = array_create(cols);
-    explored = array_create(cols);
-    vis = array_create(cols);
-    flow = array_create(cols);
-    for (var i = 0; i < cols; i++) {
-        grid[i] = array_create(rows, 1);
-        explored[i] = array_create(rows, 0);
-        vis[i] = array_create(rows, 0);
-        flow[i] = array_create(rows, -1);
+item_label = function(_it) {
+    switch (_it.type) {
+        case 0: return "Ler: " + notes_data[_it.note].title;
+        case 1: return "Pegar Kit Médico";
+        case 2: return "Pegar Bateria";
+        case 3: return "Pegar Munição";
+        case 4:
+            if (_it.sub == 0) return "Pegar Chave do Portão";
+            if (_it.sub == 1) return "Pegar Cartão de Acesso";
+            return "Pegar Fusível";
+        case 5: return "Pegar Pílulas";
     }
-    flow_q = array_create(cols * rows, 0);
+    return "Pegar";
+};
 
-    // --- salas ---
-    rooms = [];
-    var _tries = 0;
-    var _room_target = min(24, 12 + floor(max(0, level - 1) * 0.8));
-    while (array_length(rooms) < _room_target && _tries < 1800) {
-        _tries++;
-        var _w = irandom_range(8, 15);
-        var _h = irandom_range(6, 11);
-        var _cx = irandom_range(2, cols - _w - 3);
-        var _cy = irandom_range(2, rows - _h - 3);
-        var _ok = true;
-        for (var k = 0; k < array_length(rooms); k++) {
-            var _o = rooms[k];
-            if (_cx < _o.x + _o.w + 2 && _cx + _w + 2 > _o.x && _cy < _o.y + _o.h + 2 && _cy + _h + 2 > _o.y) {
-                _ok = false;
-                break;
+pickup_item = function(_i) {
+    var _it = items[_i];
+    var _pcol = c_yellow;
+    switch (_it.type) {
+        case 0:
+            var _have = false;
+            for (var k = 0; k < array_length(notes_found); k++) { if (notes_found[k] == _it.note) _have = true; }
+            if (!_have) array_push(notes_found, _it.note);
+            read_note = _it.note;
+            sanity = min(100, sanity + 4);
+            play_snd(snd_pick, 0.5, 0.6);
+            state = STATE_READ;
+            break;
+        case 1: meds++; _pcol = c_lime; play_snd(snd_pick, 0.6, 0.7); add_floater(_it.x, _it.y - 12, "+KIT MÉDICO [H]", c_lime); break;
+        case 2: bats++; _pcol = c_aqua; play_snd(snd_pick, 0.6, 1.4); add_floater(_it.x, _it.y - 12, "+BATERIA [R]", c_aqua); break;
+        case 3: ammo += 3; _pcol = c_orange; play_snd(snd_pick, 0.6, 1.1); add_floater(_it.x, _it.y - 12, "+3 BALAS", c_orange); break;
+        case 5: pills++; _pcol = make_color_rgb(200, 120, 255); play_snd(snd_pick, 0.6, 0.9); add_floater(_it.x, _it.y - 12, "+PÍLULAS [Q]", _pcol); break;
+        case 4:
+            play_snd(snd_win, 0.5, 1);
+            if (_it.sub == 0) { has_gatekey = true; show_msg("Você pegou a CHAVE DO PORTÃO.", 200); }
+            if (_it.sub == 1) { has_keycard = true; show_msg("Você pegou o CARTÃO DE ACESSO.", 200); }
+            if (_it.sub == 2) {
+                fuses++;
+                show_msg("FUSÍVEL " + string(fuses) + "/3", 160);
+                if (fuses >= 3) {
+                    alarm_timer = 900;
+                    shake = 14;
+                    show_msg("Os geradores rugem! O ALARME dispara! Eles sabem onde você está!", 300);
+                    repeat (3) { var _p = pick_spot(2, player.x, player.y, 320); spawn_enemy_at(choose(0, 1, 3), _p.x, _p.y); }
+                }
             }
-        }
-        if (_ok) array_push(rooms, { x : _cx, y : _cy, w : _w, h : _h, theme : irandom(3), danger : 0.2, kind : 0, visited : false, event_done : false });
+            break;
     }
-    for (var k = 0; k < array_length(rooms); k++) {
-        var _rm = rooms[k];
-        carve_rect(_rm.x, _rm.y, _rm.x + _rm.w - 1, _rm.y + _rm.h - 1);
-    }
-    for (var k = 1; k < array_length(rooms); k++) connect_rooms(rooms[k - 1], rooms[k]);
-    repeat (3) connect_rooms(rooms[irandom(array_length(rooms) - 1)], rooms[irandom(array_length(rooms) - 1)]);
-
-    // Cada estrutura recebe identidade e risco proprios; alas distantes tendem a ser mais perigosas.
-    var _origin = rooms[0];
-    var _world_diag = max(1, point_distance(0, 0, cols, rows));
-    for (var k = 0; k < array_length(rooms); k++) {
-        var _z = rooms[k];
-        var _dist = point_distance(_origin.x + _origin.w * 0.5, _origin.y + _origin.h * 0.5, _z.x + _z.w * 0.5, _z.y + _z.h * 0.5);
-        _z.kind = irandom(3);
-        _z.theme = _z.kind;
-        _z.danger = clamp(0.12 + (_dist / _world_diag) * 1.05 + random_range(-0.12, 0.2) + max(0, level - 1) * 0.012, 0.08, 1);
-        rooms[k] = _z;
-    }
-
-    // --- pilares nas salas (cobertura e variedade) ---
-    for (var k = 1; k < array_length(rooms); k++) {
-        var _rp = rooms[k];
-        if (random(1) < 0.7) grid[_rp.x + 1][_rp.y + _rp.h - 2] = 1;
-        if (random(1) < 0.7) grid[_rp.x + _rp.w - 2][_rp.y + 1] = 1;
-    }
-
-    // --- lampadas nos cantos das salas ---
-    lamps = [];
-    for (var k = 0; k < array_length(rooms); k++) {
-        var _rl = rooms[k];
-        array_push(lamps, {
-            x : _rl.x * tile + tile / 2, y : _rl.y * tile + tile / 2,
-            on : 1, broken : (random(1) < 0.35)
-        });
-    }
-
-    // --- spawn do player na sala 0 ---
-    var _s = rooms[0];
-    player.x = (_s.x + _s.w div 2) * tile + tile / 2;
-    player.y = (_s.y + _s.h div 2) * tile + tile / 2;
-    rooms[0].visited = true;
-    rooms[0].event_done = true;
-    player.facing_dir = 0;
-    camera_pitch = 0;
-    player.hurt_cd = 0;
-    player.bob = 0;
-
-    // --- saida na sala mais distante ---
-    var _best = -1;
-    exit_c = _s.x + _s.w div 2;
-    exit_r = _s.y + _s.h div 2;
-    for (var k = 1; k < array_length(rooms); k++) {
-        var _rk = rooms[k];
-        var _dd = point_distance(_s.x, _s.y, _rk.x, _rk.y);
-        if (_dd > _best) {
-            _best = _dd;
-            exit_c = _rk.x + _rk.w div 2;
-            exit_r = _rk.y + _rk.h div 2;
-        }
-    }
-
-    // Sobreviventes surgem em locais distintos e podem ser aliados ou traidores.
-    npcs = [];
-    var _npc_count = min(2, 1 + floor(max(0, level - 2) / 4));
-    repeat (_npc_count) {
-        var _nr = rooms[irandom_range(1, array_length(rooms) - 1)];
-        var _nx = (_nr.x + _nr.w * 0.5) * tile;
-        var _ny = (_nr.y + _nr.h * 0.5) * tile;
-        array_push(npcs, { x : _nx, y : _ny, home_x : _nx, home_y : _ny,
-                           traitor : (random(1) < 0.42), used : false, revealed : false,
-                           anim : random(360), face : random(360) });
-    }
-    exit_open = false;
-    alarm_on = false;
-
-    // --- itens ---
-    items = [];
-    mission_type = irandom(2);
-    docs_total = (mission_type == 0) ? min(4 + floor((level - 1) * 0.75), 12)
-                                     : min(3 + floor((level - 1) * 0.45), 7);
-    docs_got = 0;
-    var _objective_item = (mission_type == 0) ? 0 : ((mission_type == 1) ? 3 : 4);
-    for (var i = 0; i < docs_total; i++) {
-        var _p = random_floor(player.x, player.y, 260);
-        array_push(items, { x : _p.x, y : _p.y, type : _objective_item, timer : random(360) });
-    }
-    repeat (2 + extra_pickups) {
-        var _p1 = random_floor(player.x, player.y, 120);
-        array_push(items, { x : _p1.x, y : _p1.y, type : 1, timer : random(360) });
-    }
-    repeat (3 + extra_pickups) {
-        var _p2 = random_floor(player.x, player.y, 120);
-        array_push(items, { x : _p2.x, y : _p2.y, type : 2, timer : random(360) });
-    }
-
-    // --- inimigos ---
-    enemies = [];
-    repeat (min(2 + ceil(level * 0.7), 8)) spawn_enemy(460);
-    spawn_timer = 0;
-    // A fase 1 permanece intensa; as seguintes escalam mais devagar.
-    spawn_interval = max(560, 1650 - max(0, level - 1) * 105);
-    max_enemies = min(12, 3 + ceil(level * 0.8));
-
-    // --- poeira ambiente, sangue, textos ---
-    dust = [];
-    repeat (80) array_push(dust, { x : random(cols * tile), y : random(rows * tile), vx : random_range(-0.15, 0.15), vy : random_range(-0.1, 0.1) });
-    decals = [];
-    floaters = [];
-    particles = [];
-
-    level_time = 0;
-    jumpscare = 0; contract_flash = 0;
-    shake = 0; hurt_flash = 0; panic = 0; heart_pulse = 0;
-    blackout = 0; blackout_cd = irandom_range(1800, 3000);
-    combo = 0; combo_timer = 0;
-    flare_charges = 2; flare_pulse = 0;
-    fade = 1;
-    cam_x = clamp(player.x - vw / 2, 0, cols * tile - vw);
-    cam_y = clamp(player.y - vh / 2, 0, rows * tile - vh);
-
-    update_visibility();
-    update_flow();
-    build_3d();
-    current_zone = rooms[0];
-    show_msg("CONTRATO " + string(level) + ": " + objective_names[mission_type] + " - explore e prepare a extracao", 260);
+    add_particles(_it.x, _it.y, 16, _pcol, 2);
+    array_delete(items, _i, 1);
 };
 
-gain_field_xp = function(_amount) {
-    player.xp += _amount;
-    if (player.xp >= player.xp_next) {
-        player.xp -= player.xp_next;
-        player.rank++;
-        player.xp_next += 2;
-        player.hp_max += 8;
-        player.stamina_max += 5;
-        player.hp = min(player.hp_max, player.hp + 20);
-        player.stamina = player.stamina_max;
-        pontos += 250;
-        show_msg("NIVEL DE CAMPO " + string(player.rank) + "! VIDA E VIGOR AUMENTARAM", 210);
-        play_snd(snd_win, 0.5, 1.1);
+use_med = function() {
+    if (meds > 0 && player.hp < player.hp_max) {
+        meds--;
+        player.hp = min(player.hp_max, player.hp + 45);
+        play_snd(snd_heal, 0.6, 1);
+        add_floater(player.x, player.y - 18, "+45 VIDA", c_lime);
+    }
+};
+use_pill = function() {
+    if (pills > 0 && sanity < 100) {
+        pills--;
+        sanity = min(100, sanity + 45);
+        play_snd(snd_heal, 0.6, 0.7);
+        add_floater(player.x, player.y - 18, "+SANIDADE", make_color_rgb(200, 120, 255));
+    }
+};
+use_bat = function() {
+    if (bats > 0 && battery < 90) {
+        bats--;
+        battery = min(100, battery + 50);
+        play_snd(snd_click, 0.7, 1.4);
+        add_floater(player.x, player.y - 18, "+BATERIA", c_aqua);
     }
 };
 
-complete_contract = function() {
-    if (exit_open) return;
-    contract_flash = 55;
-    add_particles(player.x, player.y, 52, c_aqua, 4.5);
-    add_particles(player.x, player.y, 28, c_yellow, 3.2);
-    exit_open = true;
-    alarm_on = true;
-    var _ai = audio_play_sound(snd_alarm, 10, true);
-    audio_sound_gain(_ai, 0.35, 0);
-    shake = 12;
-    if (level == 1) {
-        show_msg("OBJETIVO CONCLUIDO! ENCONTRE A SAIDA VERDE", 240);
-        spawn_enemy(420);
+start_dialog = function(_lines, _after) {
+    dlg_lines = _lines;
+    dlg_i = 0;
+    dlg_t = 0;
+    dlg_after = _after;
+    state = STATE_DIALOG;
+};
+
+get_objective = function() {
+    if (boss_dead) return lucas_met ? "Escolha o destino do Coração." : "Fale com Lucas, perto do Coração.";
+    if (boss_started) return "Derrote O Diretor! Use a lanterna para revelá-lo.";
+    if (!talked_marta) return "Fale com Marta, na cabana.";
+    if (!gates[0].open) {
+        if (!has_gatekey) return "Ache a chave do portão na Estação Florestal (norte).";
+        return "Leve a chave ao portão da cidade (leste).";
+    }
+    if (!gates[1].open) {
+        if (!has_keycard) return "Ache o cartão de acesso na Delegacia da cidade.";
+        return "Leve o cartão à porta do Complexo (leste da cidade).";
+    }
+    if (!gates[2].open) {
+        if (fuses < 3) return "Ache os fusíveis no Complexo (" + string(fuses) + "/3).";
+        return "Ative o elevador, na sala sul do Complexo.";
+    }
+    return "Desça ao Subsolo e enfrente O Diretor.";
+};
+
+npc_talk = function(_n) {
+    if (_n.kind == 0) {
+        if (!talked_marta) {
+            start_dialog([
+                ["Marta", "Graças a Deus... uma pessoa de verdade. Você não tem aquele olhar vazio."],
+                ["Ana", "Estou procurando meu irmão, Lucas. Ele trabalhava na PANIC INC."],
+                ["Marta", "Ninguém sai de lá, querida. Desde o apagão, a cidade inteira virou... isso que anda lá fora."],
+                ["Marta", "Pegue este revólver. Tem poucas balas, então use com sabedoria. A luz segura essas coisas. O escuro as traz."],
+                ["Marta", "A Guarda Florestal trancou o portão da cidade. A chave está na estação florestal, ao norte da mata."],
+                ["Marta", "Esta cabana é segura. Eles não entram na luz da lâmpada. Volte aqui sempre que precisar descansar."]
+            ], 1);
+        } else {
+            start_dialog([
+                ["Marta", "A cabana é segura. Descanse o quanto precisar."],
+                ["Marta", "Lembre-se: " + get_objective()]
+            ], 0);
+        }
+    } else if (_n.kind == 1) {
+        if (!talked_tomas) {
+            start_dialog([
+                ["Tomás", "Ei! Você fala! Faz dias que transmito pedindo ajuda e ninguém responde..."],
+                ["Ana", "Preciso entrar no Complexo PANIC INC. Meu irmão está lá."],
+                ["Tomás", "Então precisa do cartão de acesso. Está na delegacia, na sala de evidências. Cuidado: as Sombras só aparecem na luz, e a luz as queima."],
+                ["Tomás", "Leve estas pílulas. Quando a sua sanidade cair, elas ajudam. Eu fico aqui, na luz do rádio."]
+            ], 2);
+        } else {
+            start_dialog([["Tomás", "Fique na luz, Ana. Sempre na luz."], ["Tomás", get_objective()]], 0);
+        }
     } else {
-        show_msg("O VIGIA ACORDOU. A LUZ NAO VAI DETE-LO", 280);
-        spawn_enemy(520);
-        var _wi = array_length(enemies) - 1;
-        var _warden = enemies[_wi];
-        _warden.type = 3;
-        _warden.danger = max(0.78, _warden.danger);
-        _warden.spd = max(1.65, _warden.spd);
-        _warden.stalk_cd = irandom_range(180, 300);
-        enemies[_wi] = _warden;
+        start_dialog([
+            ["Lucas", "Ana... você veio mesmo."],
+            ["Ana", "Lucas! Eu estou aqui, vou te tirar daí!"],
+            ["Lucas", "Eu sou a âncora, Ana. O Coração vive do meu medo. Se eu parar de temer, ele morre... e eu junto."],
+            ["Lucas", "Você pode me levar embora e deixar o Coração vivo. Ou pode desligá-lo e acabar com tudo isso."],
+            ["Lucas", "A escolha é sua. Eu confio em você."]
+        ], 4);
     }
 };
 
+finish_dialog = function() {
+    var _code = dlg_after;
+    state = STATE_PLAYING;
+    if (_code == 1) {
+        talked_marta = true;
+        has_gun = true;
+        ammo += 6;
+        play_snd(snd_pick, 0.7, 0.8);
+        show_msg("Você recebeu o REVÓLVER (6 balas). Atire com o botão esquerdo ou ESPAÇO.", 300);
+    }
+    if (_code == 2) {
+        talked_tomas = true;
+        pills += 2;
+        play_snd(snd_pick, 0.7, 1.1);
+        show_msg("Você recebeu 2 pílulas calmantes [Q].", 200);
+    }
+    if (_code == 3) start_boss_fight();
+    if (_code == 4) {
+        lucas_met = true;
+        state = STATE_ENDCHOICE;
+    }
+};
+
+try_open_gate = function(_g) {
+    var _ok = false;
+    if (_g.need == 0 && has_gatekey) _ok = true;
+    if (_g.need == 1 && has_keycard) _ok = true;
+    if (_g.need == 2 && fuses >= 3) _ok = true;
+    if (_ok) {
+        for (var c = _g.c1; c <= _g.c2; c++) {
+            for (var r = _g.r1; r <= _g.r2; r++) grid[c][r] = 0;
+        }
+        _g.open = true;
+        play_snd(snd_door, 0.9, 1);
+        shake = 5;
+        show_msg(_g.name + " aberto!", 160);
+        build_3d();
+    } else {
+        play_snd(snd_click, 0.7, 0.5);
+        if (_g.need == 0) show_msg("Trancado. Precisa da chave do portão.", 160);
+        if (_g.need == 1) show_msg("Trancado. Precisa do cartão de acesso.", 160);
+        if (_g.need == 2) show_msg("Sem energia. Precisa de 3 fusíveis (" + string(fuses) + "/3).", 160);
+    }
+};
+
+// ============================================================
+// COMBATE
+// ============================================================
+add_tracer = function(_x1, _y1, _x2, _y2) {
+    array_push(tracers, { x1 : _x1, y1 : _y1, x2 : _x2, y2 : _y2, life : 6 });
+};
+
+kill_enemy = function(_i) {
+    var _e = enemies[_i];
+    var _col = (_e.type == 3) ? make_color_rgb(140, 120, 200) : make_color_rgb(120, 10, 10);
+    add_particles(_e.x, _e.y, 24, _col, 2.8);
+    play_snd(snd_hurt, 0.5, 0.6);
+    kills++;
+    if (_e.type != 3 && !_e.summoned) {
+        var _r = random(1);
+        if (_r < 0.20) place_item(_e.x, _e.y, IT_AMMO, 0, -1);
+        else if (_r < 0.30) place_item(_e.x, _e.y, IT_MED, 0, -1);
+        else if (_r < 0.38) place_item(_e.x, _e.y, IT_PILL, 0, -1);
+    }
+    array_delete(enemies, _i, 1);
+};
+
+damage_enemy = function(_i, _d) {
+    var _e = enemies[_i];
+    _e.hp -= _d;
+    _e.flash = 6;
+    _e.lost = 0;
+    if (_e.mode == 0) _e.mode = 1;
+    add_particles(_e.x, _e.y, 6, make_color_rgb(150, 20, 20), 2);
+    if (_e.hp <= 0) kill_enemy(_i);
+};
+
+hurt_player = function(_dmg, _san) {
+    if (player.hurt_cd > 0) return;
+    player.hp = max(0, player.hp - _dmg);
+    sanity = max(0, sanity - _san * sanity_mult);
+    player.hurt_cd = 50;
+    shake = 10;
+    hurt_flash = 1;
+    add_particles(player.x, player.y, 14, c_red, 2.5);
+    play_snd(snd_hurt, 0.8, random_range(0.9, 1.1));
+    array_push(decals, { x : player.x + random_range(-10, 10), y : player.y + random_range(-10, 10), r : random_range(3, 8) });
+    if (array_length(decals) > 60) array_delete(decals, 0, 1);
+};
+
+fire_gun = function() {
+    if (!has_gun || player.shoot_cd > 0) return;
+    if (ammo <= 0) {
+        play_snd(snd_click, 0.6, 0.6);
+        show_msg("Sem munição!", 60);
+        player.shoot_cd = 20;
+        return;
+    }
+    ammo--;
+    player.shoot_cd = 28;
+    muzzle = 5;
+    shake = max(shake, 3);
+    play_snd(snd_shot, 0.9, random_range(0.95, 1.05));
+    var _dir = player.facing_dir + random_range(-1.5, 1.5);
+    var _len = 0;
+    var _hx = player.x;
+    var _hy = player.y;
+    var _hit = -1;
+    var _hitboss = false;
+    var _dmg = 40 * dmg_mult;
+    while (_len < 420) {
+        _len += 5;
+        _hx = player.x + lengthdir_x(_len, _dir);
+        _hy = player.y + lengthdir_y(_len, _dir);
+        if (solid_at(_hx, _hy)) break;
+        for (var i = 0; i < array_length(enemies); i++) {
+            if (point_distance(_hx, _hy, enemies[i].x, enemies[i].y) < enemies[i].rad + 3) { _hit = i; break; }
+        }
+        if (_hit != -1) break;
+        if (boss != -1 && point_distance(_hx, _hy, boss.x, boss.y) < boss.rad + 3) { _hitboss = true; break; }
+    }
+    add_tracer(player.x + lengthdir_x(12, _dir), player.y + lengthdir_y(12, _dir), _hx, _hy);
+    // o tiro faz barulho: atrai monstros
+    for (var i = 0; i < array_length(enemies); i++) {
+        if (enemies[i].mode == 0 && point_distance(enemies[i].x, enemies[i].y, player.x, player.y) < 600) {
+            enemies[i].mode = 1;
+            enemies[i].lost = 0;
+        }
+    }
+    if (_hit != -1) damage_enemy(_hit, _dmg);
+    if (_hitboss) {
+        var _m = 1;
+        if (boss.phase == 2 && !boss.lit) _m = 0.15;
+        boss.hp -= _dmg * _m;
+        boss.flash = 6;
+        add_particles(boss.x, boss.y, 8, make_color_rgb(255, 60, 60), 2.5);
+    }
+};
+
+// ---------- sustos ----------
+spawn_hallu = function() {
+    var _d = player.facing_dir + random_range(-35, 35);
+    var _l = ray_len(player.x, player.y, _d, 190);
+    if (_l < 110) return false;
+    array_push(hallu, { x : player.x + lengthdir_x(_l - 12, _d), y : player.y + lengthdir_y(_l - 12, _d), face : _d + 180, life : 200, watch : 0, anim : random(360) });
+    sanity = max(0, sanity - 2);
+    play_snd(snd_whisper, 0.35, random_range(0.8, 1.2));
+    return true;
+};
+
+trigger_scare = function() {
+    var _k = irandom(3);
+    switch (_k) {
+        case 0: spawn_hallu(); break;
+        case 1: flicker_t = 100; play_snd(snd_whisper, 0.5, 0.7); break;
+        case 2: foot_scare = 8; break;
+        case 3: play_snd(snd_door, 0.7, random_range(0.7, 1)); shake = max(shake, 5); break;
+    }
+};
+
+// ============================================================
+// CHEFE: O DIRETOR
+// ============================================================
+boss_shot = function(_x, _y, _dir, _spd, _dmg) {
+    array_push(shots, { x : _x, y : _y, vx : lengthdir_x(_spd, _dir), vy : lengthdir_y(_spd, _dir), life : 260, dmg : _dmg });
+};
+
+boss_ring = function(_n, _spd, _off, _dmg) {
+    for (var i = 0; i < _n; i++) boss_shot(boss.x, boss.y, _off + i * 360 / _n, _spd, _dmg);
+};
+
+seal_arena = function() {
+    for (var c = 106; c <= 108; c++) grid[c][59] = 2;
+    seal_on = true;
+    build_3d();
+};
+
+unseal_arena = function() {
+    for (var c = 106; c <= 108; c++) grid[c][59] = 0;
+    seal_on = false;
+    build_3d();
+};
+
+start_boss_fight = function() {
+    boss = { x : tc(107), y : tc(70), hp : 700, hpmax : 700, phase : 1, anim : 0, face : 90, cd : 120, pat : 0,
+             dash : 0, dt : 0, dang : 0, tp : 200, flash : 0, lit : false, rad : 22 };
+    seal_arena();
+    var _ax = [97, 117, 97, 117, 97, 117];
+    var _ay = [62, 62, 78, 78, 70, 70];
+    for (var k = 0; k < 6; k++) place_item(tc(_ax[k]), tc(_ay[k]), IT_AMMO, 0, -1);
+    place_item(tc(101), tc(70), IT_MED, 0, -1);
+    place_item(tc(113), tc(70), IT_MED, 0, -1);
+    if (boss_mus_inst != -1) audio_stop_sound(boss_mus_inst);
+    boss_mus_inst = audio_play_sound(snd_boss_mus, 8, true);
+    audio_sound_gain(boss_mus_inst, 0.55, 0);
+    play_snd(snd_roar, 1, 0.9);
+    shake = 16;
+    show_msg("O DIRETOR: 'Mostre-me o seu medo!'", 240);
+};
+
+boss_defeated = function() {
+    boss_dead = true;
+    boss = -1;
+    shots = [];
+    shake = 30;
+    white_flash = 1;
+    play_snd(snd_roar, 1, 0.5);
+    add_particles(tc(107), tc(70), 60, make_color_rgb(255, 60, 60), 4);
+    if (boss_mus_inst != -1) { audio_stop_sound(boss_mus_inst); boss_mus_inst = -1; }
+    for (var i = array_length(enemies) - 1; i >= 0; i--) {
+        if (enemies[i].summoned) array_delete(enemies, i, 1);
+    }
+    unseal_arena();
+    array_push(npcs, { x : tc(107), y : tc(75), kind : 2, name : "Lucas", face : 270 });
+    sanity = min(100, sanity + 30);
+    show_msg("O Diretor caiu! Fale com Lucas, perto do Coração.", 260);
+};
+
+update_boss = function() {
+    var _b = boss;
+    var _dist = point_distance(_b.x, _b.y, player.x, player.y);
+    _b.anim++;
+    if (_b.flash > 0) _b.flash--;
+
+    // luz da lanterna revela e fere o chefe
+    _b.lit = false;
+    if (flash_on && _dist < flash_len + 40) {
+        var _ad = abs(angle_difference(player.facing_dir, point_direction(player.x, player.y, _b.x, _b.y)));
+        if (_ad < flash_angle + 12 && los(player.x, player.y, _b.x, _b.y)) _b.lit = true;
+    }
+    if (_b.lit) {
+        _b.hp -= 0.30 * dmg_mult;
+        battery = max(0, battery - 0.02);
+        _b.flash = 2;
+    }
+
+    var _ph = 1;
+    if (_b.hp <= 470) _ph = 2;
+    if (_b.hp <= 220) _ph = 3;
+    if (_ph != _b.phase) {
+        _b.phase = _ph;
+        shake = 18;
+        play_snd(snd_roar, 1, 0.8 + 0.1 * _ph);
+        _b.cd = 80;
+        _b.dash = 0;
+        var _ax2 = [97, 117, 97, 117];
+        var _ay2 = [62, 62, 78, 78];
+        for (var k = 0; k < 4; k++) place_item(tc(_ax2[k]), tc(_ay2[k]), IT_AMMO, 0, -1);
+        if (_ph == 2) {
+            show_msg("O DIRETOR: 'Você não me vê... mas eu vejo o seu medo.'", 280);
+            blackout = 360;
+            repeat (2) { var _s = spawn_enemy_at(3, boss.x + random_range(-60, 60), boss.y + random_range(-60, 60)); _s.summoned = true; _s.mode = 1; }
+        }
+        if (_ph == 3) {
+            show_msg("O DIRETOR: 'ENTÃO VAMOS ACABAR COM ISSO!'", 280);
+            repeat (2) { var _s2 = spawn_enemy_at(0, boss.x + random_range(-60, 60), boss.y + random_range(-60, 60)); _s2.summoned = true; _s2.mode = 1; }
+        }
+    }
+
+    _b.cd--;
+    var _dirp = point_direction(_b.x, _b.y, player.x, player.y);
+    if (_b.dash == 0) _b.face = _dirp;
+
+    switch (_ph) {
+        case 1:
+            if (_dist > 150) move_body(_b, lengthdir_x(0.85, _dirp), lengthdir_y(0.85, _dirp), 14);
+            if (_b.cd <= 0) {
+                if (_b.pat == 0) boss_ring(14, 2.2, random(360), 12);
+                else { for (var a = -14; a <= 14; a += 14) boss_shot(_b.x, _b.y, _dirp + a, 3.2, 12); }
+                _b.pat = 1 - _b.pat;
+                _b.cd = 150;
+                play_snd(snd_growl, 0.6, 0.6);
+            }
+            break;
+        case 2:
+            if (_dist > 100) move_body(_b, lengthdir_x(0.7, _dirp), lengthdir_y(0.7, _dirp), 14);
+            _b.tp--;
+            if (_b.tp <= 0) {
+                _b.tp = 220;
+                for (var t = 0; t < 30; t++) {
+                    var _a = random(360);
+                    var _px = player.x + lengthdir_x(170, _a);
+                    var _py = player.y + lengthdir_y(170, _a);
+                    if (!box_hits(_px, _py, 16) && _px > 94 * tile && _px < 120 * tile && _py > 60 * tile && _py < 80 * tile) {
+                        add_particles(_b.x, _b.y, 14, make_color_rgb(150, 20, 200), 2.5);
+                        _b.x = _px;
+                        _b.y = _py;
+                        add_particles(_b.x, _b.y, 14, make_color_rgb(150, 20, 200), 2.5);
+                        play_snd(snd_whisper, 0.8, 0.6);
+                        break;
+                    }
+                }
+            }
+            if (_b.cd <= 0) {
+                for (var a2 = -24; a2 <= 24; a2 += 12) boss_shot(_b.x, _b.y, _dirp + a2, 3.4, 12);
+                if (_b.pat == 1) boss_ring(8, 2.4, random(360), 10);
+                _b.pat = 1 - _b.pat;
+                _b.cd = 110;
+                play_snd(snd_growl, 0.6, 0.5);
+            }
+            break;
+        case 3:
+            if (_b.dash == 0) {
+                if (_dist > 90) move_body(_b, lengthdir_x(1.5, _dirp), lengthdir_y(1.5, _dirp), 14);
+                if (_b.cd <= 0) {
+                    if (irandom(1) == 0) {
+                        _b.dash = 1;
+                        _b.dt = 45;
+                        _b.dang = _dirp;
+                        play_snd(snd_roar, 0.7, 1.2);
+                    } else {
+                        boss_ring(16, 2.6, random(360), 12);
+                        for (var a3 = -10; a3 <= 10; a3 += 10) boss_shot(_b.x, _b.y, _dirp + a3, 3.8, 12);
+                        _b.cd = 95;
+                        play_snd(snd_growl, 0.6, 0.5);
+                    }
+                }
+            } else if (_b.dash == 1) {
+                _b.dt--;
+                _b.dang = _dirp;
+                if (_b.dt <= 0) { _b.dash = 2; _b.dt = 22; }
+                _b.face = _b.dang;
+            } else {
+                _b.dt--;
+                move_body(_b, lengthdir_x(7.5, _b.dang), lengthdir_y(7.5, _b.dang), 14);
+                _b.face = _b.dang;
+                if (_b.dt <= 0) { _b.dash = 0; _b.cd = 90; }
+            }
+            if (_dist < 420) sanity = max(0, sanity - 0.02 * sanity_mult);
+            break;
+    }
+
+    var _dd = (_b.dash == 2) ? 32 : 26;
+    if (point_distance(_b.x, _b.y, player.x, player.y) < _b.rad + _dd - 8) hurt_player((_b.dash == 2) ? 30 : 22, 8);
+
+    if (_b.hp <= 0) boss_defeated();
+};
+
+// ============================================================
+// DESENHO REUTILIZAVEL
+// ============================================================
+draw_husk = function(_x, _y, _face, _col, _chase, _anim, _a) {
+    draw_set_alpha(_a);
+    var _tw = sin(_anim * 0.2) * (_chase ? 2.2 : 1);
+    var _reach = _chase ? 21 : 11;
+    for (var s = -1; s <= 1; s += 2) {
+        var _sx = _x + lengthdir_x(8 * s, _face + 90);
+        var _sy = _y + lengthdir_y(8 * s, _face + 90);
+        var _ang = _face + _tw * 3 * s;
+        var _ex = _sx + lengthdir_x(_reach, _ang);
+        var _ey = _sy + lengthdir_y(_reach, _ang);
+        draw_set_color(shade(_col, 0.55));
+        draw_line_width(_sx, _sy, _ex, _ey, 3);
+        for (var cl = -1; cl <= 1; cl++) {
+            draw_line_width(_ex, _ey, _ex + lengthdir_x(6, _ang + cl * 28), _ey + lengthdir_y(6, _ang + cl * 28), 1);
+        }
+        draw_set_color(_col);
+        draw_circle(_sx, _sy, 4, false);
+    }
+    draw_set_color(_col);
+    draw_circle(_x, _y, 9, false);
+    var _hx = _x + lengthdir_x(5, _face);
+    var _hy = _y + lengthdir_y(5, _face);
+    draw_set_color(shade(_col, 1.2));
+    draw_circle(_hx, _hy, 6, false);
+    draw_set_color(c_black);
+    for (var s = -1; s <= 1; s += 2) {
+        draw_circle(_hx + lengthdir_x(2, _face) + lengthdir_x(2.6 * s, _face + 90), _hy + lengthdir_y(2, _face) + lengthdir_y(2.6 * s, _face + 90), 1.8, false);
+    }
+    if (_chase) draw_circle(_hx + lengthdir_x(4, _face), _hy + lengthdir_y(4, _face), 2.2, false);
+    draw_set_alpha(1);
+};
+
+draw_person = function(_x, _y, _face, _jacket) {
+    draw_set_alpha(0.35);
+    draw_set_color(c_black);
+    draw_ellipse(_x - 10, _y + 5, _x + 10, _y + 13, false);
+    draw_set_alpha(1);
+    draw_set_color(_jacket);
+    draw_circle(_x, _y, 9, false);
+    for (var s = -1; s <= 1; s += 2) {
+        draw_circle(_x + lengthdir_x(7 * s, _face + 90), _y + lengthdir_y(7 * s, _face + 90), 4, false);
+    }
+    draw_set_color(c_black);
+    draw_circle(_x, _y, 9, true);
+    draw_set_color(make_color_rgb(40, 28, 22));
+    draw_circle(_x - lengthdir_x(1.5, _face), _y - lengthdir_y(1.5, _face), 6.5, false);
+    draw_set_color(make_color_rgb(235, 195, 160));
+    draw_circle(_x + lengthdir_x(1.5, _face), _y + lengthdir_y(1.5, _face), 5, false);
+};
+
+// ============================================================
+// MELHORIAS, RESPAWN, NOVO JOGO
+// ============================================================
 apply_upgrade = function(_id) {
     switch (_id) {
         case 0: speed_mult += 0.12; break;
@@ -841,12 +1622,13 @@ apply_upgrade = function(_id) {
         case 3: batt_mult *= 0.6; break;
         case 4: player.hp_max += 25; player.hp = player.hp_max; break;
         case 5: hear_mult *= 0.7; break;
-        case 6: extra_pickups += 1; break;
+        case 6: dmg_mult += 0.4; break;
+        case 7: sanity_mult *= 0.65; break;
     }
 };
 
 pick_upgrades = function() {
-    var _pool = [0, 1, 2, 3, 4, 5, 6];
+    var _pool = [0, 1, 2, 3, 4, 5, 6, 7];
     upg_choice = [];
     repeat (3) {
         var _i = irandom(array_length(_pool) - 1);
@@ -855,28 +1637,78 @@ pick_upgrades = function() {
     }
 };
 
-save_best = function() {
+save_game = function() {
     ini_open("panic_save.ini");
-    ini_write_real("save", "best", best_pontos);
-    ini_write_real("save", "level", best_level);
+    ini_write_real("save", "endings", endings_seen);
+    ini_write_real("save", "besttime", best_time);
     ini_close();
 };
 
+respawn = function() {
+    player.x = check_x;
+    player.y = check_y;
+    player.hp = player.hp_max * 0.6;
+    player.hurt_cd = 90;
+    sanity = max(sanity, 55);
+    battery = max(battery, 35);
+    for (var i = array_length(enemies) - 1; i >= 0; i--) {
+        var _e = enemies[i];
+        _e.mode = 0;
+        if (point_distance(_e.x, _e.y, check_x, check_y) < 380) array_delete(enemies, i, 1);
+    }
+    shots = [];
+    if (boss_started && !boss_dead) {
+        boss_started = false;
+        boss = -1;
+        if (seal_on) unseal_arena();
+        if (boss_mus_inst != -1) { audio_stop_sound(boss_mus_inst); boss_mus_inst = -1; }
+        for (var i = array_length(enemies) - 1; i >= 0; i--) {
+            if (enemies[i].summoned) array_delete(enemies, i, 1);
+        }
+    }
+    alarm_timer = 0;
+    blackout = 0;
+    fade = 1;
+    state = STATE_PLAYING;
+    show_msg("Você acorda num ponto seguro...", 180);
+    update_visibility();
+    update_flow();
+};
+
 new_game = function() {
-    pontos = 0;
-    level = 1;
-    player.rank = 1; player.xp = 0; player.xp_next = 5;
-    speed_mult = 1; stam_mult = 1; batt_mult = 1; hear_mult = 1; extra_pickups = 0;
+    has_gun = false; ammo = 0; meds = 0; pills = 0; bats = 0;
+    has_gatekey = false; has_keycard = false; fuses = 0;
+    talked_marta = false; talked_tomas = false; lucas_met = false;
+    boss_started = false; boss_dead = false; boss = -1; boss_mus_inst = -1;
+    notes_found = [0];
+    kills = 0; deaths = 0; play_time = 0;
+    speed_mult = 1; stam_mult = 1; batt_mult = 1; hear_mult = 1; dmg_mult = 1; sanity_mult = 1;
     flash_len = 200; flash_angle = 28;
-    camera_pitch = 0;
-    player.hp_max = 100;
-    player.hp = player.hp_max;
-    player.stamina_max = 100;
-    player.stamina = player.stamina_max;
-    player.exhausted = false;
-    battery = 100;
-    flash_on = true;
-    generate_level();
+    player.hp_max = 100; player.hp = 100;
+    player.stamina = 100; player.exhausted = false;
+    player.hurt_cd = 0; player.shoot_cd = 0; player.bob = 0;
+    battery = 100; flash_on = true; flash_power = 1; sanity = 100;
+    panic = 0; shake = 0; hurt_flash = 0; heart_pulse = 0; white_flash = 0; muzzle = 0;
+    fade = 1; blackout = 0; blackout_cd = irandom_range(2400, 4200);
+    scare_cd = irandom_range(1200, 2400); alert_cd = 0; heart_cd = 0; step_sign = false;
+    drip_cd = 300; creak_cd = 900; whisper_cd = 600; flicker_t = 0; foot_scare = 0; alarm_timer = 0;
+    spawn_timer = 0; spawn_interval = irandom_range(1200, 2000);
+    particles = []; floaters = []; decals = []; shots = []; tracers = []; hallu = []; dust = [];
+    repeat (120) array_push(dust, { x : random(cols * tile), y : random(rows * tile), vx : random_range(-0.15, 0.15), vy : random_range(-0.1, 0.1) });
+    visited_biome = [true, false, false, false];
+    cur_biome = 0; zone_name = biome_names[0]; zone_timer = 220;
+    check_idx = -1;
+    generate_world();
+    player.x = tc(10);
+    player.y = tc(42);
+    player.facing_dir = 0;
+    check_x = player.x; check_y = player.y;
+    cam_x = clamp(player.x - vw / 2, 0, cols * tile - vw);
+    cam_y = clamp(player.y - vh / 2, 0, rows * tile - vh);
+    update_visibility();
+    update_flow();
+    build_3d();
+    msg = ""; msg_timer = 0;
 };
 
 new_game();

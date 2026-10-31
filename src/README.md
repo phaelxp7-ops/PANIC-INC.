@@ -1,33 +1,33 @@
-# PANIC INC. — código do protótipo
+# PANIC INC. — protótipo GameMaker
 
-Estes arquivos vieram dos eventos enviados: `Create_0.gml`, `Step_0.gml`, `Draw_0.gml` e `Draw_64.gml` para `obj_panic`. Eles são fonte de referência/importação; o repositório ainda não contém um `.yyp` nem metadados de recursos para abrir como projeto GameMaker completo.
+Esta pasta contém os quatro eventos de `obj_panic` da versão v4: `Create_0.gml`, `Step_0.gml`, `Draw_0.gml` e `Draw_64.gml` (Draw GUI). O projeto original `.yyp` e os recursos do GameMaker ainda não estão neste repositório; portanto os arquivos são fontes para colar nos eventos correspondentes, não um projeto pronto para abrir.
 
-## Evolução para exploração RPG
+## O que entrou nesta versão
 
-- Cada contrato gera uma área ampla e contínua, com salas conectadas, estruturas sorteadas (arquivo, enfermaria, subestação e abrigo) e saída opcional depois de completar o objetivo.
-- A dificuldade de cada estrutura varia conforme a distância e o sorteio da geração: áreas de risco maior podem gerar perseguidores mais fortes e causar mais dano.
-- Os contratos sorteiam um objetivo entre recuperar arquivos, religar geradores ou conter anomalias; fusíveis e relíquias têm objetos e recompensas próprios.
-- A primeira visita a cada sala pode disparar uma emboscada, um apagão com perseguidor, um cache ou uma pista sonora falsa.
-- Um ou dois sobreviventes podem aparecer. Conversar rende suprimentos ou uma pista do objetivo; alguns revelam uma armadilha e chamam o Vigia.
-- Após concluir um contrato a partir da fase 2, o Vigia entra na caçada. Ele ignora a lanterna, reposiciona-se quando some de vista e pode disparar uma aparição curta.
-- Monstros e sobreviventes usam malhas low-poly procedurais arredondadas, silhuetas, membros e animação de movimento em vez de cubos como corpo.
-- Concluir uma tarefa dispara um pulso de extração e partículas antes da fuga.
-- O jogador recebe XP ao avançar nos objetivos. Ao subir de nível de campo, aumenta vida e vigor e recupera parte dos recursos.
-- No modo 3D, o mouse controla a visão horizontal e vertical; o minimapa acompanha os mapas maiores.
-- Pisos e paredes usam paletas procedurais por estrutura, além de grades, faixas e marcas geométricas. São detalhes em cores de vértice; o projeto ainda não tem texturas bitmap/modelos 3D próprios.
+- Campanha contínua por quatro regiões: floresta, Vale Sombrio, complexo PANIC INC. e subsolo.
+- História de Ana procurando o irmão Lucas, contada por cenas, diálogos e documentos que podem ser relidos no diário.
+- Progressão com chave, cartão de acesso e fusíveis para abrir áreas; há suprimentos, checkpoints e ameaças que mudam conforme a região.
+- Encontros com quatro tipos de inimigo, sustos e alucinações ligados à sanidade, apagões, armadilhas, NPCs com informação/recompensas e uma luta final em três fases contra o Diretor.
+- Dois finais com escolha do jogador.
+- Câmera 3D com mouse na horizontal e vertical, modo 2D e interface com objetivo, inventário, sanidade e mapa explorado.
+- Malhas low-poly e detalhes procedurais para as criaturas. A arte é geométrica, não há modelos ou texturas realistas importados.
 
-Para importar a versão atual, substitua os eventos correspondentes de `obj_panic` pelos quatro arquivos `.gml` desta pasta e salve no GameMaker. O repositório ainda não contém o `.yyp` real, portanto esses arquivos não são um projeto instalável por si só.
+## Eventos e controles
 
-## Multiplayer online — próximo passo implementado como preparação
+Copie cada arquivo para o evento com o mesmo nome no objeto `obj_panic`:
 
-A lógica atual usa um único `player` global e simula todos os inimigos localmente. Para multiplayer online confiável, a sessão precisa de servidor autoritativo: o servidor valida movimento, coleta, dano, alarmes, inimigos e fim de fase; clientes enviam comandos e recebem snapshots. A conexão TCP do GameMaker sozinha não fornece matchmaking nem atravessa NAT. É necessário definir servidor público/relay e protocolo de lobby antes de habilitar “Criar/Entrar”.
+| Arquivo | Evento do GameMaker |
+| --- | --- |
+| `Create_0.gml` | Create |
+| `Step_0.gml` | Step |
+| `Draw_0.gml` | Draw |
+| `Draw_64.gml` | Draw GUI |
 
-Ordem de integração:
+Controles principais: `WASD` move; `Shift` corre; mouse move a câmera no modo 3D; `Tab` alterna 2D/3D; `E` interage; `F` alterna lanterna; clique esquerdo ou espaço dispara; `H` usa cura; `Q` usa calmante; `R` usa bateria; `J` abre o diário; `M` abre o mapa; `N` alterna o som; `Esc` pausa.
 
-1. Abrir o `.yyp` real em `src/` e converter `player` em lista de jogadores identificados.
-2. Separar input local de simulação e replicação de estado.
-3. Implementar eventos assíncronos de rede e reconexão, com mensagens versionadas e validação no host.
-4. Adicionar lobby/invite, teste com duas instâncias e tratar desconexão/retorno.
+## Limites de integração
 
-Não há serviço público de servidor configurado, então o modo online ainda não pode ser anunciado como jogável.
+- O modo multiplayer não foi implementado nesta versão. A estrutura de `player` mantém campos para sincronização futura, mas não há lobby, servidor, replicação nem conexão de rede.
+- O mapa é gerado e desenhado por código. É uma base jogável de exploração, não um mundo aberto com arte final, navegação por quests ou saves de campanha completos.
+- O repositório ainda não tem `.yyp`, sprites, fontes importadas nem projeto para compilar. A integração e compilação precisam acontecer no projeto real do GameMaker.
 
