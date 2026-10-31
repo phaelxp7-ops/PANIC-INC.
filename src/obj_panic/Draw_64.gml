@@ -119,7 +119,8 @@ gtext(gw / 2, 16, "FASE " + string(level) + "   |   TEMPO " + _tm, 1.3, c_white)
 if (alarm_on && (current_time div 300) mod 2 == 0) gtext(gw / 2, 44, "!!! ALARME !!!", 1.6, c_red);
 
 // ---------- MINIMAPA ----------
-var _ms = 3;
+// Mantem o minimapa inteiro dentro do HUD mesmo quando os complexos crescem.
+var _ms = max(1, min(3, floor((gh - 40) / rows), floor((gw * 0.22) / cols)));
 var _mmx = gw - cols * _ms - 16;
 var _mmy = 16;
 draw_set_color(c_black);
