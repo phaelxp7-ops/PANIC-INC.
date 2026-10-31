@@ -41,7 +41,7 @@ if (state == STATE_TITLE) {
     draw_set_color(make_color_rgb(65, 76, 96));
     draw_roundrect(gw * 0.12, 205, gw * 0.88, 520, true);
     gtext(gw / 2, 226, "RECUPERE OS ARQUIVOS. NAO DEIXE A EQUIPE PARA TRAS.", 1.35, c_white);
-    gtext(gw / 2, 286, "WASD: mover     SHIFT: correr     MOUSE: mirar a lanterna", 1.1, c_ltgray);
+    gtext(gw / 2, 286, "WASD: explorar     SHIFT: correr     MOUSE: olhar para os lados e para cima/baixo", 1.1, c_ltgray);
     gtext(gw / 2, 322, "E: coletar     F: lanterna     Q: sinalizador (atordoa monstros)", 1.1, c_aqua);
     gtext(gw / 2, 358, "TAB: alternar 2D/3D     M: som     ESC: pausar", 1.1, c_ltgray);
     gtext(gw / 2, 414, "Correr faz barulho. A luz segura o perseguidor palido.", 1.05, c_orange);
@@ -104,6 +104,9 @@ draw_text(24 + _bw + 10, 68, "BATERIA " + (flash_on ? "(ON)" : "(OFF)"));
 gtext(24, 96, "DOCUMENTOS: " + string(docs_got) + " / " + string(docs_total), 1.4, c_yellow);
 gtext(24, 124, "PONTOS: " + string(pontos), 1.2, c_white);
 gtext(24, 198, "SINALIZADORES [Q]: " + string(flare_charges), 1.05, c_aqua);
+gtext(24, 222, "NIVEL DE CAMPO " + string(player.rank) + "  XP " + string(player.xp) + "/" + string(player.xp_next), 1.0, c_aqua);
+gtext(24, 246, structure_names[current_zone.kind] + "  |  RISCO " + string(ceil(current_zone.danger * 100)) + "%", 1.0,
+      current_zone.danger > 0.7 ? c_red : c_ltgray);
 if (combo > 1) {
     gtext(24, 148, "COMBO x" + string(combo), 1.4, c_orange);
     draw_set_color(c_dkgray);
@@ -193,10 +196,13 @@ if (nearby_item != -1) {
 if (!exit_open && point_distance(player.x, player.y, exit_c * tile + 16, exit_r * tile + 16) < 60) {
     gtext(gw / 2, gh - 100, "SAIDA TRANCADA - colete todos os documentos", 1.3, c_orange);
 }
+else if (exit_open && point_distance(player.x, player.y, exit_c * tile + 16, exit_r * tile + 16) < 60) {
+    gtext(gw / 2, gh - 100, "[E] EXTRAIR   |   voce pode explorar antes de sair", 1.3, c_lime);
+}
 if (msg_timer > 0) gtext(gw / 2, 110, msg, 1.5, c_white);
 
 draw_set_halign(fa_left);
-gtext(24, gh - 30, "TAB: modo " + (mode == 0 ? "2D" : "3D") + "   |   F: lanterna   |   M: som " + (sfx_on ? "ON" : "OFF") + "   |   ESC: pausa", 1, c_ltgray);
+gtext(24, gh - 30, "TAB: modo " + (mode == 0 ? "2D" : "3D") + "   |   F: lanterna   |   MOUSE: camera 3D   |   M: som " + (sfx_on ? "ON" : "OFF") + "   |   ESC: pausa", 1, c_ltgray);
 
 // ---------- FADE ----------
 if (fade > 0) {
