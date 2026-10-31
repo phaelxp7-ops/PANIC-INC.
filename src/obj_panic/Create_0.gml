@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 18660)
-Total output lines: 1782
-
 // ============================================================
 // PANIC INC. v4 - "O CORACAO DO MEDO"
 // obj_panic - CREATE
@@ -96,10 +93,10 @@ add_note("Terminal do Elevador", "Elevador para o Nível -3. Requer 3 fusíveis 
 add_note("Câmera de Segurança 12", "Registro: o Diretor aparece e some entre os monitores. Quando ele desaparece, as luzes morrem.\n\nPara vê-lo, só com a lanterna. Para feri-lo... também.");
 
 intro_pages = [
-    "Vale Sombrio, 3h12 da madrugada.\n\nHá três noites a cidade inteira está sem energia. Ninguém atende o telefone. Ninguém sai de casa.",
-    "Seu irmão, Lucas, era técnico noturno na PANIC INC., a empresa que sustentava a cidade.\n\nHoje, um bilhete apareceu embaixo da sua porta...",
+    "VALE SOMBRIO — 03:12. O rádio do carro repete o alerta de evacuação. A gravação tem a sua voz no fundo. Você ainda não chegou à cidade.",
+    "Seu irmão, Lucas, era técnico noturno na PANIC INC., a empresa que sustentava a cidade.\n\nHoje, um bilhete apareceu embaixo da sua porta. A letra é dele. A data é de amanhã...",
     "'Ana, se você está lendo isto, NÃO venha atrás de mim.\n\nA PANIC INC. não fabrica segurança. Fabrica MEDO.\n\nVou desligar o sistema esta noite. Se eu não voltar... não deixe a luz apagar.'\n\n- Lucas",
-    "Você dirigiu a noite toda. O carro morreu no fim da estrada, no meio da mata.\n\nAo longe, uma única luz de cabana ainda está acesa.\n\nVocê não vai voltar sem o seu irmão."
+    "O motor morre. No rádio, Lucas sussurra: 'Ana, não siga a luz.'\n\nDo outro lado da mata, uma cabana acende a lâmpada. Na janela, alguém com o seu rosto observa.\n\nVocê precisa encontrar seu irmão. Mas agora sabe que alguma coisa já esperava por você."
 ];
 intro_i = 0; intro_t = 0;
 
@@ -459,7 +456,809 @@ gen_forest = function() {
     carve_disc(9, 42, 9, 0);
     carve_disc(30, 12, 7, 0);
     carve_disc(36, 62, 6, 0);
-   …8660 tokens truncated…arar de temer, ele morre... e eu junto."],
+    carve_disc(18, 68, 7, 0);
+    carve_disc(25, 30, 4, 0);
+    carve_disc(45, 40, 4, 0);
+    carve_path(14, 42, 29, 16, 2, 0);
+    carve_path(14, 42, 36, 62, 2, 0);
+    carve_path(14, 42, 45, 40, 2, 0);
+    carve_path(36, 62, 18, 68, 2, 0);
+    carve_path(30, 12, 45, 40, 2, 0);
+    carve_path(25, 30, 14, 42, 2, 0);
+    carve_path(36, 62, 45, 40, 2, 0);
+    // muro de fronteira com a cidade
+    for (var r = 1; r <= 82; r++) { grid[47][r] = 1; biome[47][r] = 0; }
+
+    // CABANA (madeira)
+    for (var c = 5; c <= 13; c++) {
+        for (var r = 38; r <= 46; r++) {
+            var _edge = (c == 5 || c == 13 || r == 38 || r == 46);
+            grid[c][r] = _edge ? 1 : 0;
+            biome[c][r] = 4;
+        }
+    }
+    for (var r = 41; r <= 43; r++) grid[13][r] = 0;
+    // ESTACAO FLORESTAL
+    for (var c = 26; c <= 34; c++) {
+        for (var r = 8; r <= 15; r++) {
+            var _edge2 = (c == 26 || c == 34 || r == 8 || r == 15);
+            grid[c][r] = _edge2 ? 1 : 0;
+            biome[c][r] = 4;
+        }
+    }
+    for (var c = 29; c <= 31; c++) grid[c][15] = 0;
+    // CEMITERIO (lapides de pedra)
+    for (var gx = 0; gx < 3; gx++) {
+        for (var gy = 0; gy < 3; gy++) {
+            grid[14 + gx * 4][64 + gy * 3] = 1;
+            biome[14 + gx * 4][64 + gy * 3] = 5;
+        }
+    }
+    // FOGUEIRA
+    grid[36][62] = 1;
+    biome[36][62] = 5;
+};
+
+gen_town = function() {
+    for (var c = 48; c <= 86; c++) {
+        for (var r = 2; r <= 81; r++) { grid[c][r] = 0; biome[c][r] = 1; }
+    }
+    var _rects = [];
+    for (var bx = 51; bx <= 75; bx += 12) {
+        for (var by = 4; by <= 69; by += 13) {
+            array_push(_rects, { x : bx, y : by, w : irandom_range(8, 9), h : irandom_range(7, 8), role : -1, door_top : false });
+        }
+    }
+    // papeis: 0 delegacia, 1 radio, 2 farmacia, 3 igreja, 4 loja de armas
+    var _idx = [];
+    for (var i = 0; i < array_length(_rects); i++) array_push(_idx, i);
+    for (var i = 0; i < 5; i++) {
+        var _p = irandom(array_length(_idx) - 1);
+        _rects[_idx[_p]].role = i;
+        array_delete(_idx, _p, 1);
+    }
+    bld = _rects;
+    for (var i = 0; i < array_length(_rects); i++) {
+        var _b = _rects[i];
+        if (_b.role < 0 && random(1) < 0.15) continue;
+        for (var c = _b.x; c < _b.x + _b.w; c++) {
+            for (var r = _b.y; r < _b.y + _b.h; r++) {
+                var _edge = (c == _b.x || c == _b.x + _b.w - 1 || r == _b.y || r == _b.y + _b.h - 1);
+                grid[c][r] = _edge ? 1 : 0;
+            }
+        }
+        var _top = (random(1) < 0.5);
+        var _dr = _top ? _b.y : _b.y + _b.h - 1;
+        var _dc = _b.x + _b.w div 2 - 1;
+        grid[_dc][_dr] = 0;
+        grid[_dc + 1][_dr] = 0;
+        _b.door_top = _top;
+        repeat (irandom_range(1, 3)) {
+            var _fc = irandom_range(_b.x + 2, _b.x + _b.w - 3);
+            var _fr = irandom_range(_b.y + 2, _b.y + _b.h - 3);
+            grid[_fc][_fr] = 1;
+        }
+        var _ccx = _b.x + _b.w div 2;
+        var _ccy = _b.y + _b.h div 2;
+        for (var dx = -1; dx <= 1; dx++) {
+            for (var dy = -1; dy <= 1; dy++) grid[_ccx + dx][_ccy + dy] = 0;
+        }
+    }
+    // carros abandonados nas ruas
+    repeat (16) {
+        var _c = irandom_range(49, 85);
+        var _r = irandom_range(3, 80);
+        if (_c < 51 && abs(_r - 40) < 4) continue;
+        if (_c > 83 && abs(_r - 27) < 4) continue;
+        var _ok = true;
+        for (var dx = -1; dx <= 2; dx++) {
+            for (var dy = -1; dy <= 1; dy++) {
+                if (grid[clamp(_c + dx, 0, cols - 1)][clamp(_r + dy, 0, rows - 1)] != 0) _ok = false;
+            }
+        }
+        if (_ok) { grid[_c][_r] = 1; grid[_c + 1][_r] = 1; }
+    }
+};
+
+gen_facility = function() {
+    frooms = [];
+    array_push(frooms, { x : 88,  y : 23, w : 7, h : 9 });   // saguao
+    array_push(frooms, { x : 104, y : 44, w : 7, h : 8 });   // sala do elevador
+    var _tries = 0;
+    while (array_length(frooms) < 11 && _tries < 800) {
+        _tries++;
+        var _w = irandom_range(6, 10);
+        var _h = irandom_range(5, 8);
+        var _cx = irandom_range(96, 125 - _w);
+        var _cy = irandom_range(3, 50 - _h);
+        var _ok = true;
+        for (var k = 0; k < array_length(frooms); k++) {
+            var _o = frooms[k];
+            if (_cx < _o.x + _o.w + 2 && _cx + _w + 2 > _o.x && _cy < _o.y + _o.h + 2 && _cy + _h + 2 > _o.y) {
+                _ok = false;
+                break;
+            }
+        }
+        if (_ok) array_push(frooms, { x : _cx, y : _cy, w : _w, h : _h });
+    }
+    for (var k = 0; k < array_length(frooms); k++) {
+        var _rm = frooms[k];
+        carve_rect(_rm.x, _rm.y, _rm.x + _rm.w - 1, _rm.y + _rm.h - 1, 2);
+    }
+    var _ord = [];
+    for (var k = 0; k < array_length(frooms); k++) array_push(_ord, frooms[k]);
+    for (var a = 0; a < array_length(_ord) - 1; a++) {
+        for (var b2 = 0; b2 < array_length(_ord) - 1 - a; b2++) {
+            if (_ord[b2].x > _ord[b2 + 1].x) {
+                var _tmp = _ord[b2];
+                _ord[b2] = _ord[b2 + 1];
+                _ord[b2 + 1] = _tmp;
+            }
+        }
+    }
+    for (var k = 1; k < array_length(_ord); k++) connect_rooms(_ord[k - 1], _ord[k], 2);
+    repeat (4) connect_rooms(frooms[irandom(array_length(frooms) - 1)], frooms[irandom(array_length(frooms) - 1)], 2);
+    // pilares
+    for (var k = 2; k < array_length(frooms); k++) {
+        var _rp = frooms[k];
+        if (random(1) < 0.7) grid[_rp.x + 1][_rp.y + _rp.h - 2] = 1;
+        if (random(1) < 0.7) grid[_rp.x + _rp.w - 2][_rp.y + 1] = 1;
+    }
+    // corredor do elevador
+    carve_rect(106, 52, 108, 52, 2);
+};
+
+gen_underground = function() {
+    carve_rect(106, 54, 108, 59, 3);
+    carve_rect(94, 60, 120, 80, 3);
+    var _px = [99, 114, 99, 114];
+    var _py = [65, 65, 74, 74];
+    for (var k = 0; k < 4; k++) {
+        for (var dx = 0; dx < 2; dx++) {
+            for (var dy = 0; dy < 2; dy++) grid[_px[k] + dx][_py[k] + dy] = 1;
+        }
+    }
+    // reator (nucleo)
+    for (var c = 106; c <= 108; c++) {
+        for (var r = 77; r <= 79; r++) grid[c][r] = 1;
+    }
+};
+
+add_gate = function(_c1, _r1, _c2, _r2, _need, _name, _bio) {
+    for (var c = _c1; c <= _c2; c++) {
+        for (var r = _r1; r <= _r2; r++) { grid[c][r] = 2; biome[c][r] = _bio; }
+    }
+    array_push(gates, { c1 : _c1, r1 : _r1, c2 : _c2, r2 : _r2, need : _need, name : _name, open : false,
+                        x : ((_c1 + _c2) / 2) * tile + tile / 2, y : ((_r1 + _r2) / 2) * tile + tile / 2 });
+};
+
+compute_reach = function() {
+    spots = [[], [], [], [], [], []];
+    var _seen = array_create(cols);
+    for (var i = 0; i < cols; i++) _seen[i] = array_create(rows, 0);
+    var _q = array_create(cols * rows, 0);
+    var _head = 0;
+    var _tail = 0;
+    _seen[10][42] = 1;
+    _q[0] = 10 + 42 * cols;
+    _tail = 1;
+    while (_head < _tail) {
+        var _cur = _q[_head];
+        _head++;
+        var _cc = _cur mod cols;
+        var _cr = _cur div cols;
+        if (grid[_cc][_cr] == 0) array_push(spots[biome[_cc][_cr]], _cur);
+        for (var k = 0; k < 4; k++) {
+            var _nc = _cc + ndx[k];
+            var _nr = _cr + ndy[k];
+            if (_nc < 0 || _nr < 0 || _nc >= cols || _nr >= rows) continue;
+            if (grid[_nc][_nr] == 1 || _seen[_nc][_nr] == 1) continue;
+            _seen[_nc][_nr] = 1;
+            _q[_tail] = _nc + _nr * cols;
+            _tail++;
+        }
+    }
+};
+
+pick_spot = function(_b, _fx, _fy, _mind) {
+    var _l = spots[_b];
+    var _n = array_length(_l);
+    if (_n == 0) return { x : _fx, y : _fy };
+    for (var t = 0; t < 200; t++) {
+        var _k = _l[irandom(_n - 1)];
+        var _px = (_k mod cols) * tile + tile / 2;
+        var _py = (_k div cols) * tile + tile / 2;
+        if (point_distance(_px, _py, _fx, _fy) >= _mind * (1 - t / 200)) return { x : _px, y : _py };
+    }
+    return { x : _fx, y : _fy };
+};
+
+// ---------- objetos do mundo ----------
+place_item = function(_x, _y, _type, _sub, _note) {
+    array_push(items, { x : _x, y : _y, type : _type, sub : _sub, note : _note, timer : random(360) });
+};
+
+add_lamp = function(_x, _y, _col, _broken) {
+    array_push(lamps, { x : _x, y : _y, on : 1, broken : _broken, col : _col });
+};
+
+add_safe = function(_x, _y, _r, _name, _rx, _ry) {
+    array_push(safes, { x : _x, y : _y, r : _r, name : _name, rx : _rx, ry : _ry, visited : false });
+};
+
+spawn_enemy_at = function(_type, _x, _y) {
+    var _spd = 1;
+    var _hp = 50;
+    var _rad = 10;
+    switch (_type) {
+        case 0: _spd = 0.95; _hp = 60; _rad = 11; break;
+        case 1: _spd = 1.9;  _hp = 28; _rad = 8;  break;
+        case 2: _spd = 2.5;  _hp = 85; _rad = 11; break;
+        case 3: _spd = 1.15; _hp = 45; _rad = 10; break;
+    }
+    var _e = {
+        x : _x, y : _y, type : _type, spd : _spd * random_range(0.92, 1.08),
+        hp : _hp, hpmax : _hp, rad : _rad,
+        face : random(360), anim : random(360), lit : false,
+        mode : 0, wdir : random(360), wt : irandom_range(30, 90), lost : 0,
+        lurch : irandom(120), lunge : 0, flash : 0, summoned : false
+    };
+    array_push(enemies, _e);
+    return _e;
+};
+
+populate_world = function() {
+    items = []; enemies = []; npcs = []; lamps = []; safes = [];
+
+    // ---------------- FLORESTA ----------------
+    add_lamp(tc(9), tc(42), make_color_rgb(255, 200, 120), false);
+    add_safe(tc(9), tc(42), 170, "Cabana", tc(10), tc(42));
+    array_push(npcs, { x : tc(11), y : tc(41), kind : 0, name : "Marta", face : 180 });
+    add_lamp(tc(30), tc(12), make_color_rgb(255, 200, 120), true);
+    place_item(tc(30), tc(12), IT_KEY, 0, -1);
+    place_item(tc(28), tc(10), IT_NOTE, 0, 1);
+    add_lamp(tc(36), tc(62), make_color_rgb(255, 140, 50), false);
+    add_safe(tc(36), tc(62), 120, "Fogueira", tc(36), tc(64));
+    place_item(tc(34), tc(60), IT_NOTE, 0, 2);
+    place_item(tc(38), tc(64), IT_MED, 0, -1);
+    place_item(tc(18), tc(68), IT_NOTE, 0, 3);
+    place_item(tc(16), tc(70), IT_AMMO, 0, -1);
+    place_item(tc(20), tc(66), IT_AMMO, 0, -1);
+    place_item(tc(25), tc(30), IT_PILL, 0, -1);
+    repeat (2) { var _p = pick_spot(0, tc(9), tc(42), 400); place_item(_p.x, _p.y, IT_MED, 0, -1); }
+    repeat (2) { var _p = pick_spot(0, tc(9), tc(42), 400); place_item(_p.x, _p.y, IT_BAT, 0, -1); }
+    repeat (2) { var _p = pick_spot(0, tc(9), tc(42), 400); place_item(_p.x, _p.y, IT_AMMO, 0, -1); }
+    repeat (6) { var _p = pick_spot(0, tc(9), tc(42), 600); spawn_enemy_at(0, _p.x, _p.y); }
+    repeat (3) { var _p = pick_spot(0, tc(9), tc(42), 600); spawn_enemy_at(1, _p.x, _p.y); }
+    repeat (2) { var _p = pick_spot(0, tc(9), tc(42), 700); spawn_enemy_at(2, _p.x, _p.y); }
+
+    // ---------------- CIDADE ----------------
+    for (var i = 0; i < array_length(bld); i++) {
+        var _b = bld[i];
+        var _cx = _b.x + _b.w div 2;
+        var _cy = _b.y + _b.h div 2;
+        switch (_b.role) {
+            case 0:
+                place_item(tc(_cx), tc(_cy), IT_KEY, 1, -1);
+                place_item(tc(_cx + 1), tc(_cy), IT_NOTE, 0, 5);
+                add_lamp(tc(_cx), tc(_cy), make_color_rgb(200, 220, 255), true);
+                break;
+            case 1:
+                array_push(npcs, { x : tc(_cx), y : tc(_cy), kind : 1, name : "Tomás", face : 90 });
+                place_item(tc(_cx + 1), tc(_cy + 1), IT_NOTE, 0, 4);
+                add_lamp(tc(_cx), tc(_cy), make_color_rgb(255, 200, 120), false);
+                add_safe(tc(_cx), tc(_cy), 150, "Rádio Vale", tc(_cx - 1), tc(_cy));
+                break;
+            case 2:
+                place_item(tc(_cx), tc(_cy), IT_NOTE, 0, 6);
+                place_item(tc(_cx + 1), tc(_cy), IT_MED, 0, -1);
+                place_item(tc(_cx - 1), tc(_cy), IT_MED, 0, -1);
+                place_item(tc(_cx), tc(_cy + 1), IT_PILL, 0, -1);
+                place_item(tc(_cx), tc(_cy - 1), IT_PILL, 0, -1);
+                add_lamp(tc(_cx), tc(_cy), make_color_rgb(180, 255, 200), true);
+                break;
+            case 3:
+                place_item(tc(_cx), tc(_cy), IT_NOTE, 0, 7);
+                add_lamp(tc(_cx), tc(_cy - 1), make_color_rgb(255, 190, 110), false);
+                break;
+            case 4:
+                place_item(tc(_cx - 1), tc(_cy), IT_AMMO, 0, -1);
+                place_item(tc(_cx), tc(_cy), IT_AMMO, 0, -1);
+                place_item(tc(_cx + 1), tc(_cy), IT_AMMO, 0, -1);
+                place_item(tc(_cx), tc(_cy + 1), IT_AMMO, 0, -1);
+                break;
+        }
+    }
+    repeat (3) { var _p = pick_spot(1, tc(60), tc(40), 0); place_item(_p.x, _p.y, IT_BAT, 0, -1); }
+    repeat (2) { var _p = pick_spot(1, tc(60), tc(40), 0); place_item(_p.x, _p.y, IT_MED, 0, -1); }
+    repeat (3) { var _p = pick_spot(1, tc(60), tc(40), 0); place_item(_p.x, _p.y, IT_AMMO, 0, -1); }
+    repeat (14) { var _p = pick_spot(1, tc(60), tc(40), 0); add_lamp(_p.x, _p.y, make_color_rgb(255, 215, 150), (random(1) < 0.4)); }
+    repeat (5) { var _p = pick_spot(1, tc(48), tc(40), 300); spawn_enemy_at(0, _p.x, _p.y); }
+    repeat (4) { var _p = pick_spot(1, tc(48), tc(40), 300); spawn_enemy_at(1, _p.x, _p.y); }
+    repeat (3) { var _p = pick_spot(1, tc(48), tc(40), 300); spawn_enemy_at(2, _p.x, _p.y); }
+    repeat (3) { var _p = pick_spot(1, tc(48), tc(40), 300); spawn_enemy_at(3, _p.x, _p.y); }
+
+    // ---------------- COMPLEXO ----------------
+    var _lb = frooms[0];
+    var _el = frooms[1];
+    add_lamp(tc(_lb.x + _lb.w div 2), tc(_lb.y + _lb.h div 2), make_color_rgb(190, 230, 255), false);
+    add_safe(tc(_lb.x + _lb.w div 2), tc(_lb.y + _lb.h div 2), 150, "Saguão do Complexo", tc(_lb.x + _lb.w div 2 - 1), tc(_lb.y + _lb.h div 2));
+    place_item(tc(_lb.x + _lb.w div 2 + 1), tc(_lb.y + _lb.h div 2 + 1), IT_NOTE, 0, 14);
+    add_lamp(tc(_el.x + _el.w div 2), tc(_el.y + _el.h div 2), make_color_rgb(190, 230, 255), false);
+    add_safe(tc(_el.x + _el.w div 2), tc(_el.y + _el.h div 2), 130, "Sala do Elevador", tc(_el.x + _el.w div 2 - 1), tc(_el.y + _el.h div 2));
+    place_item(tc(_el.x + _el.w div 2 - 2), tc(_el.y + _el.h div 2), IT_NOTE, 0, 13);
+    var _free = [];
+    for (var k = 2; k < array_length(frooms); k++) array_push(_free, frooms[k]);
+    for (var k = array_length(_free) - 1; k > 0; k--) {
+        var _j = irandom(k);
+        var _tmp = _free[k];
+        _free[k] = _free[_j];
+        _free[_j] = _tmp;
+    }
+    var _nf = array_length(_free);
+    for (var k = 0; k < _nf; k++) {
+        var _rm = _free[k];
+        add_lamp(tc(_rm.x + _rm.w div 2), tc(_rm.y + _rm.h div 2), make_color_rgb(190, 230, 255), (random(1) < 0.35));
+    }
+    for (var k = 0; k < 3; k++) {
+        var _rf = _free[k mod _nf];
+        place_item(tc(_rf.x + _rf.w div 2), tc(_rf.y + _rf.h div 2), IT_KEY, 2, -1);
+    }
+    var _nid = [8, 9, 12];
+    for (var k = 0; k < 3; k++) {
+        var _rn = _free[(k + 3) mod _nf];
+        place_item(tc(_rn.x + _rn.w div 2 + 1), tc(_rn.y + _rn.h div 2), IT_NOTE, 0, _nid[k]);
+    }
+    repeat (2) { var _p = pick_spot(2, tc(91), tc(27), 0); place_item(_p.x, _p.y, IT_MED, 0, -1); }
+    repeat (2) { var _p = pick_spot(2, tc(91), tc(27), 0); place_item(_p.x, _p.y, IT_BAT, 0, -1); }
+    repeat (3) { var _p = pick_spot(2, tc(91), tc(27), 0); place_item(_p.x, _p.y, IT_AMMO, 0, -1); }
+    repeat (2) { var _p = pick_spot(2, tc(91), tc(27), 0); place_item(_p.x, _p.y, IT_PILL, 0, -1); }
+    repeat (4) { var _p = pick_spot(2, tc(91), tc(27), 350); spawn_enemy_at(0, _p.x, _p.y); }
+    repeat (4) { var _p = pick_spot(2, tc(91), tc(27), 350); spawn_enemy_at(1, _p.x, _p.y); }
+    repeat (3) { var _p = pick_spot(2, tc(91), tc(27), 350); spawn_enemy_at(2, _p.x, _p.y); }
+    repeat (3) { var _p = pick_spot(2, tc(91), tc(27), 350); spawn_enemy_at(3, _p.x, _p.y); }
+
+    // ---------------- SUBSOLO ----------------
+    place_item(tc(107), tc(56), IT_NOTE, 0, 10);
+    place_item(tc(107), tc(61), IT_NOTE, 0, 11);
+    var _lx = [101, 112, 101, 112];
+    var _ly = [67, 67, 72, 72];
+    for (var k = 0; k < 4; k++) add_lamp(tc(_lx[k]), tc(_ly[k]), make_color_rgb(255, 40, 40), false);
+
+    // Encontros opcionais mudam de lugar a cada nova partida. Alguns sobreviventes ajudam;
+    // outros usam a confianca da Ana para atrair uma criatura.
+    repeat (irandom_range(1, 2)) {
+        var _bio = choose(1, 2);
+        var _origin_x = (_bio == 1) ? tc(60) : tc(91);
+        var _origin_y = (_bio == 1) ? tc(40) : tc(27);
+        var _p = pick_spot(_bio, _origin_x, _origin_y, 260);
+        array_push(npcs, {
+            x : _p.x, y : _p.y, kind : 3,
+            name : choose("Lia", "Bento", "Ravi", "Mila"),
+            traitor : (random(1) < 0.38), used : false, revealed : false,
+            face : random(360), anim : random(360)
+        });
+    }
+};
+
+generate_world = function() {
+    grid = array_create(cols); biome = array_create(cols); explored = array_create(cols);
+    vis = array_create(cols); flow = array_create(cols); flow_st = array_create(cols);
+    for (var i = 0; i < cols; i++) {
+        grid[i]     = array_create(rows, 1);
+        biome[i]    = array_create(rows, 0);
+        explored[i] = array_create(rows, 0);
+        vis[i]      = array_create(rows, 0);
+        flow[i]     = array_create(rows, 0);
+        flow_st[i]  = array_create(rows, 0);
+    }
+    flow_q = array_create(cols * rows, 0);
+    flow_stamp = 0;
+    vis_prev = [];
+    // bioma de cada regiao (paredes incluidas): floresta, cidade, complexo, subsolo
+    for (var c = 0; c < cols; c++) {
+        for (var r = 0; r < rows; r++) {
+            if (c <= 47) biome[c][r] = 0;
+            else if (c <= 87) biome[c][r] = 1;
+            else biome[c][r] = (r <= 52) ? 2 : 3;
+        }
+    }
+    gates = [];
+    seal_on = false;
+
+    gen_forest();
+    gen_town();
+    gen_facility();
+    gen_underground();
+    add_gate(47, 39, 47, 41, 0, "Portão da cidade", 1);
+    add_gate(87, 26, 87, 28, 1, "Porta do Complexo", 2);
+    add_gate(106, 53, 108, 53, 2, "Elevador", 3);
+    compute_reach();
+    populate_world();
+};
+
+// ---------- visao e pathfinding ----------
+update_visibility = function() {
+    for (var i = 0; i < array_length(vis_prev); i++) {
+        var _k = vis_prev[i];
+        vis[_k mod cols][_k div cols] = 0;
+    }
+    vis_prev = [];
+    var _pc = floor(player.x / tile);
+    var _pr = floor(player.y / tile);
+    var _R = 9;
+    var _c0 = max(0, _pc - _R); var _c1 = min(cols - 1, _pc + _R);
+    var _r0 = max(0, _pr - _R); var _r1 = min(rows - 1, _pr + _R);
+    for (var c = _c0; c <= _c1; c++) {
+        for (var r = _r0; r <= _r1; r++) {
+            if (grid[c][r] == 0 && los(player.x, player.y, c * tile + tile / 2, r * tile + tile / 2)) {
+                vis[c][r] = 1;
+                array_push(vis_prev, c + r * cols);
+            }
+        }
+    }
+    for (var c = _c0; c <= _c1; c++) {
+        for (var r = _r0; r <= _r1; r++) {
+            if (grid[c][r] >= 1) {
+                for (var k = 0; k < 8; k++) {
+                    var _nc = c + ndx8[k];
+                    var _nr = r + ndy8[k];
+                    if (_nc >= 0 && _nr >= 0 && _nc < cols && _nr < rows) {
+                        if (grid[_nc][_nr] == 0 && vis[_nc][_nr] == 1) {
+                            vis[c][r] = 1;
+                            array_push(vis_prev, c + r * cols);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    for (var i = 0; i < array_length(vis_prev); i++) {
+        var _k2 = vis_prev[i];
+        explored[_k2 mod cols][_k2 div cols] = 1;
+    }
+};
+
+update_flow = function() {
+    flow_stamp++;
+    var _pc = floor(player.x / tile);
+    var _pr = floor(player.y / tile);
+    if (_pc < 0 || _pr < 0 || _pc >= cols || _pr >= rows) return;
+    if (grid[_pc][_pr] >= 1) return;
+    var _head = 0;
+    var _tail = 1;
+    flow[_pc][_pr] = 0;
+    flow_st[_pc][_pr] = flow_stamp;
+    flow_q[0] = _pc + _pr * cols;
+    while (_head < _tail) {
+        var _cur = flow_q[_head];
+        _head++;
+        var _cc = _cur mod cols;
+        var _cr = _cur div cols;
+        var _d = flow[_cc][_cr];
+        if (_d >= 45) continue;
+        for (var k = 0; k < 4; k++) {
+            var _nc = _cc + ndx[k];
+            var _nr = _cr + ndy[k];
+            if (_nc < 0 || _nr < 0 || _nc >= cols || _nr >= rows) continue;
+            if (grid[_nc][_nr] >= 1 || flow_st[_nc][_nr] == flow_stamp) continue;
+            flow_st[_nc][_nr] = flow_stamp;
+            flow[_nc][_nr] = _d + 1;
+            flow_q[_tail] = _nc + _nr * cols;
+            _tail++;
+        }
+    }
+};
+
+flow_val = function(_c, _r) {
+    if (flow_st[_c][_r] != flow_stamp) return -1;
+    return flow[_c][_r];
+};
+
+// ============================================================
+// GEOMETRIA 3D
+// ============================================================
+vertex_format_begin();
+vertex_format_add_position_3d();
+vertex_format_add_color();
+vf = vertex_format_end();
+
+vv = function(_vb, _x, _y, _z, _c) {
+    vertex_position_3d(_vb, _x, _y, _z);
+    vertex_color(_vb, _c, 1);
+};
+
+vquad = function(_vb, _x1, _y1, _z1, _x2, _y2, _z2, _x3, _y3, _z3, _x4, _y4, _z4, _c) {
+    vv(_vb, _x1, _y1, _z1, _c); vv(_vb, _x2, _y2, _z2, _c); vv(_vb, _x3, _y3, _z3, _c);
+    vv(_vb, _x1, _y1, _z1, _c); vv(_vb, _x3, _y3, _z3, _c); vv(_vb, _x4, _y4, _z4, _c);
+};
+
+make_box = function(_c) {
+    var _vb = vertex_create_buffer();
+    vertex_begin(_vb, vf);
+    var _h = 0.5;
+    vquad(_vb, -_h,-_h, _h,  _h,-_h, _h,  _h, _h, _h, -_h, _h, _h, shade(_c, 1.0));
+    vquad(_vb, -_h,-_h,-_h, -_h, _h,-_h,  _h, _h,-_h,  _h,-_h,-_h, shade(_c, 0.4));
+    vquad(_vb,  _h,-_h,-_h,  _h, _h,-_h,  _h, _h, _h,  _h,-_h, _h, shade(_c, 0.8));
+    vquad(_vb, -_h,-_h,-_h, -_h,-_h, _h, -_h, _h, _h, -_h, _h,-_h, shade(_c, 0.6));
+    vquad(_vb, -_h, _h,-_h, -_h, _h, _h,  _h, _h, _h,  _h, _h,-_h, shade(_c, 0.7));
+    vquad(_vb, -_h,-_h,-_h,  _h,-_h,-_h,  _h,-_h, _h, -_h,-_h, _h, shade(_c, 0.9));
+    vertex_end(_vb);
+    vertex_freeze(_vb);
+    return _vb;
+};
+
+// Malhas arredondadas reutilizaveis para que os inimigos nao parecam caixas.
+make_sphere = function(_c) {
+    var _vb = vertex_create_buffer();
+    vertex_begin(_vb, vf);
+    // Malha mais densa reduz o aspecto facetado em monstros e objetos 3D.
+    var _rings = 10;
+    var _sides = 16;
+    for (var _lat = 0; _lat < _rings; _lat++) {
+        var _a0 = -90 + 180 * _lat / _rings;
+        var _a1 = -90 + 180 * (_lat + 1) / _rings;
+        for (var _lon = 0; _lon < _sides; _lon++) {
+            var _b0 = 360 * _lon / _sides;
+            var _b1 = 360 * (_lon + 1) / _sides;
+            var _x00 = dcos(_a0) * dcos(_b0); var _y00 = dcos(_a0) * dsin(_b0); var _z00 = dsin(_a0);
+            var _x10 = dcos(_a0) * dcos(_b1); var _y10 = dcos(_a0) * dsin(_b1); var _z10 = dsin(_a0);
+            var _x01 = dcos(_a1) * dcos(_b0); var _y01 = dcos(_a1) * dsin(_b0); var _z01 = dsin(_a1);
+            var _x11 = dcos(_a1) * dcos(_b1); var _y11 = dcos(_a1) * dsin(_b1); var _z11 = dsin(_a1);
+            // Manchas orgânicas determinísticas: pele marmorizada sem textura externa.
+            var _grain = sin(_b0 * 5 + _a0 * 3) * cos(_b0 * 2 - _a1 * 4);
+            var _vein = max(0, sin(_b0 * 3 + _a1 * 7 + _lon * 1.7));
+            var _shade = clamp(0.72 + 0.22 * max(0, dsin(_a1)) + _grain * 0.13 - _vein * 0.12, 0.28, 1.15);
+            var _col = shade(_c, _shade);
+            vv(_vb, _x00, _y00, _z00, _col); vv(_vb, _x10, _y10, _z10, _col); vv(_vb, _x11, _y11, _z11, _col);
+            vv(_vb, _x00, _y00, _z00, _col); vv(_vb, _x11, _y11, _z11, _col); vv(_vb, _x01, _y01, _z01, _col);
+        }
+    }
+    vertex_end(_vb);
+    vertex_freeze(_vb);
+    return _vb;
+};
+
+make_spike = function(_c) {
+    var _vb = vertex_create_buffer();
+    vertex_begin(_vb, vf);
+    for (var _i = 0; _i < 8; _i++) {
+        var _a0 = _i * 45;
+        var _a1 = (_i + 1) * 45;
+        var _x0 = dcos(_a0) * 0.5; var _y0 = dsin(_a0) * 0.5;
+        var _x1 = dcos(_a1) * 0.5; var _y1 = dsin(_a1) * 0.5;
+        vv(_vb, _x0, _y0, -0.5, shade(_c, 0.6));
+        vv(_vb, _x1, _y1, -0.5, shade(_c, 0.6));
+        vv(_vb, 0, 0, 0.5, shade(_c, 1.25));
+    }
+    vertex_end(_vb);
+    vertex_freeze(_vb);
+    return _vb;
+};
+
+draw_box3d = function(_vb, _x, _y, _z, _sx, _sy, _sz, _rz) {
+    matrix_set(matrix_world, matrix_build(_x, _y, _z, 0, 0, _rz, _sx, _sy, _sz));
+    vertex_submit(_vb, pr_trianglelist, -1);
+    matrix_set(matrix_world, matrix_build_identity());
+};
+
+wall_face = function(_ax, _ay, _bx, _by, _k, _base, _door) {
+    var _hh = wall_h;
+    var _band = _door ? make_color_rgb(255, 170, 40) : shade(_base, 0.5);
+    vquad(vb_world, _ax,_ay,0,   _bx,_by,0,   _bx,_by,14,      _ax,_ay,14,      shade(_base, _k * 0.55));
+    vquad(vb_world, _ax,_ay,14,  _bx,_by,14,  _bx,_by,_hh-6,   _ax,_ay,_hh-6,   shade(_base, _k));
+    vquad(vb_world, _ax,_ay,_hh-6, _bx,_by,_hh-6, _bx,_by,_hh, _ax,_ay,_hh,     shade(_band, _k * 0.9));
+};
+
+build_3d = function() {
+    if (vb_world != -1) vertex_delete_buffer(vb_world);
+    vb_world = vertex_create_buffer();
+    vertex_begin(vb_world, vf);
+    for (var c = 0; c < cols; c++) {
+        for (var r = 0; r < rows; r++) {
+            var _x1 = c * tile; var _y1 = r * tile;
+            var _x2 = _x1 + tile; var _y2 = _y1 + tile;
+            var _bi = biome[c][r];
+            if (grid[c][r] == 0) {
+                var _k = 0.85 + 0.15 * (((c * 7 + r * 13) mod 5) / 4);
+                // Variação por terreno, sem o quadriculado artificial de ladrilho.
+                var _noise = abs((c * 37 + r * 71 + c * r * 13) mod 19) / 100;
+                var _fc = shade(pal_floor[_bi], _k * (0.94 + _noise));
+                vquad(vb_world, _x1,_y1,0, _x2,_y1,0, _x2,_y2,0, _x1,_y2,0, _fc);
+                vquad(vb_world, _x1,_y1,wall_h, _x2,_y1,wall_h, _x2,_y2,wall_h, _x1,_y2,wall_h, make_color_rgb(34, 34, 44));
+            } else {
+                var _dr = (grid[c][r] == 2);
+                var _wb = pal_wall[_bi];
+                if (r > 0 && grid[c][r - 1] == 0)           wall_face(_x1, _y1, _x2, _y1, 0.95, _wb, _dr);
+                if (r < rows - 1 && grid[c][r + 1] == 0)    wall_face(_x1, _y2, _x2, _y2, 0.70, _wb, _dr);
+                if (c > 0 && grid[c - 1][r] == 0)           wall_face(_x1, _y1, _x1, _y2, 0.80, _wb, _dr);
+                if (c < cols - 1 && grid[c + 1][r] == 0)    wall_face(_x2, _y1, _x2, _y2, 0.60, _wb, _dr);
+            }
+        }
+    }
+    vertex_end(vb_world);
+    vertex_freeze(vb_world);
+};
+
+vb_world = -1;
+vb_it    = [make_box(make_color_rgb(240, 235, 200)), make_box(make_color_rgb(80, 255, 120)), make_box(make_color_rgb(80, 220, 255)),
+            make_box(make_color_rgb(255, 180, 60)), make_box(make_color_rgb(255, 220, 60)), make_box(make_color_rgb(200, 120, 255))];
+vb_lamp  = make_box(make_color_rgb(255, 230, 150));
+vb_body  = [make_sphere(make_color_rgb(70, 76, 100)), make_sphere(make_color_rgb(110, 50, 36)), make_sphere(make_color_rgb(215, 215, 225)), make_sphere(make_color_rgb(40, 20, 60))];
+vb_hd    = [make_sphere(make_color_rgb(110, 118, 140)), make_sphere(make_color_rgb(150, 70, 50)), make_sphere(make_color_rgb(240, 240, 250)), make_sphere(make_color_rgb(70, 40, 100))];
+vb_eye   = make_sphere(make_color_rgb(255, 255, 80));
+vb_npc   = make_sphere(make_color_rgb(190, 110, 130));
+vb_npc_alert = make_sphere(make_color_rgb(125, 18, 28));
+vb_boss  = make_sphere(make_color_rgb(130, 10, 20));
+vb_core  = make_sphere(make_color_rgb(255, 50, 50));
+vb_spike = make_spike(make_color_rgb(24, 8, 18));
+en_h = [36, 14, 42, 40];
+en_w = [13, 14, 12, 10];
+
+// ============================================================
+// RPG: ITENS, INVENTARIO, DIALOGOS, PORTOES
+// ============================================================
+item_label = function(_it) {
+    switch (_it.type) {
+        case 0: return "Ler: " + notes_data[_it.note].title;
+        case 1: return "Pegar Kit Médico";
+        case 2: return "Pegar Bateria";
+        case 3: return "Pegar Munição";
+        case 4:
+            if (_it.sub == 0) return "Pegar Chave do Portão";
+            if (_it.sub == 1) return "Pegar Cartão de Acesso";
+            return "Pegar Fusível";
+        case 5: return "Pegar Pílulas";
+    }
+    return "Pegar";
+};
+
+pickup_item = function(_i) {
+    var _it = items[_i];
+    var _pcol = c_yellow;
+    switch (_it.type) {
+        case 0:
+            var _have = false;
+            for (var k = 0; k < array_length(notes_found); k++) { if (notes_found[k] == _it.note) _have = true; }
+            if (!_have) array_push(notes_found, _it.note);
+            read_note = _it.note;
+            sanity = min(100, sanity + 4);
+            play_snd(snd_pick, 0.5, 0.6);
+            state = STATE_READ;
+            break;
+        case 1: meds++; _pcol = c_lime; play_snd(snd_pick, 0.6, 0.7); add_floater(_it.x, _it.y - 12, "+KIT MÉDICO [H]", c_lime); break;
+        case 2: bats++; _pcol = c_aqua; play_snd(snd_pick, 0.6, 1.4); add_floater(_it.x, _it.y - 12, "+BATERIA [R]", c_aqua); break;
+        case 3: ammo += 3; _pcol = c_orange; play_snd(snd_pick, 0.6, 1.1); add_floater(_it.x, _it.y - 12, "+3 BALAS", c_orange); break;
+        case 5: pills++; _pcol = make_color_rgb(200, 120, 255); play_snd(snd_pick, 0.6, 0.9); add_floater(_it.x, _it.y - 12, "+PÍLULAS [Q]", _pcol); break;
+        case 4:
+            play_snd(snd_win, 0.5, 1);
+            if (_it.sub == 0) { has_gatekey = true; show_msg("Você pegou a CHAVE DO PORTÃO.", 200); }
+            if (_it.sub == 1) { has_keycard = true; show_msg("Você pegou o CARTÃO DE ACESSO.", 200); }
+            if (_it.sub == 2) {
+                fuses++;
+                show_msg("FUSÍVEL " + string(fuses) + "/3", 160);
+                if (fuses >= 3) {
+                    alarm_timer = 900;
+                    shake = 14;
+                    show_msg("Os geradores rugem! O ALARME dispara! Eles sabem onde você está!", 300);
+                    repeat (3) { var _p = pick_spot(2, player.x, player.y, 320); spawn_enemy_at(choose(0, 1, 3), _p.x, _p.y); }
+                }
+            }
+            break;
+    }
+    add_particles(_it.x, _it.y, 16, _pcol, 2);
+    array_delete(items, _i, 1);
+};
+
+use_med = function() {
+    if (meds > 0 && player.hp < player.hp_max) {
+        meds--;
+        player.hp = min(player.hp_max, player.hp + 45);
+        play_snd(snd_heal, 0.6, 1);
+        add_floater(player.x, player.y - 18, "+45 VIDA", c_lime);
+    }
+};
+use_pill = function() {
+    if (pills > 0 && sanity < 100) {
+        pills--;
+        sanity = min(100, sanity + 45);
+        play_snd(snd_heal, 0.6, 0.7);
+        add_floater(player.x, player.y - 18, "+SANIDADE", make_color_rgb(200, 120, 255));
+    }
+};
+use_bat = function() {
+    if (bats > 0 && battery < 90) {
+        bats--;
+        battery = min(100, battery + 50);
+        play_snd(snd_click, 0.7, 1.4);
+        add_floater(player.x, player.y - 18, "+BATERIA", c_aqua);
+    }
+};
+
+start_dialog = function(_lines, _after) {
+    dlg_lines = _lines;
+    dlg_i = 0;
+    dlg_t = 0;
+    dlg_after = _after;
+    state = STATE_DIALOG;
+};
+
+get_objective = function() {
+    if (boss_dead) return lucas_met ? "Escolha o destino do Coração." : "Fale com Lucas, perto do Coração.";
+    if (boss_started) return "Derrote O Diretor! Use a lanterna para revelá-lo.";
+    if (!talked_marta) return "Fale com Marta, na cabana.";
+    if (!gates[0].open) {
+        if (!has_gatekey) return "Ache a chave do portão na Estação Florestal (norte).";
+        return "Leve a chave ao portão da cidade (leste).";
+    }
+    if (!gates[1].open) {
+        if (!has_keycard) return "Ache o cartão de acesso na Delegacia da cidade.";
+        return "Leve o cartão à porta do Complexo (leste da cidade).";
+    }
+    if (!gates[2].open) {
+        if (fuses < 3) return "Ache os fusíveis no Complexo (" + string(fuses) + "/3).";
+        return "Ative o elevador, na sala sul do Complexo.";
+    }
+    return "Desça ao Subsolo e enfrente O Diretor.";
+};
+
+npc_talk = function(_n) {
+    if (_n.kind == 0) {
+        if (!talked_marta) {
+            start_dialog([
+                ["Marta", "Graças a Deus... uma pessoa de verdade. Você não tem aquele olhar vazio."],
+                ["Ana", "Estou procurando meu irmão, Lucas. Ele trabalhava na PANIC INC."],
+                ["Marta", "Ninguém sai de lá, querida. Desde o apagão, a cidade inteira virou... isso que anda lá fora."],
+                ["Marta", "Pegue este revólver. Tem poucas balas, então use com sabedoria. A luz segura essas coisas. O escuro as traz."],
+                ["Marta", "A Guarda Florestal trancou o portão da cidade. A chave está na estação florestal, ao norte da mata."],
+                ["Marta", "Esta cabana é segura. Eles não entram na luz da lâmpada. Volte aqui sempre que precisar descansar."]
+            ], 1);
+        } else {
+            start_dialog([
+                ["Marta", "A cabana é segura. Descanse o quanto precisar."],
+                ["Marta", "Lembre-se: " + get_objective()]
+            ], 0);
+        }
+    } else if (_n.kind == 1) {
+        if (!talked_tomas) {
+            start_dialog([
+                ["Tomás", "Ei! Você fala! Faz dias que transmito pedindo ajuda e ninguém responde..."],
+                ["Ana", "Preciso entrar no Complexo PANIC INC. Meu irmão está lá."],
+                ["Tomás", "Então precisa do cartão de acesso. Está na delegacia, na sala de evidências. Cuidado: as Sombras só aparecem na luz, e a luz as queima."],
+                ["Tomás", "Leve estas pílulas. Quando a sua sanidade cair, elas ajudam. Eu fico aqui, na luz do rádio."]
+            ], 2);
+        } else {
+            start_dialog([["Tomás", "Fique na luz, Ana. Sempre na luz."], ["Tomás", get_objective()]], 0);
+        }
+    } else if (_n.kind == 3) {
+        active_npc = _n;
+        if (!_n.used) {
+            _n.used = true;
+            if (_n.traitor) {
+                start_dialog([
+                    [_n.name, "Ei! Você parece saber se virar. Minha mochila ficou perto da luz, vem comigo."],
+                    ["Ana", "Por que você está tremendo?"],
+                    [_n.name, "Eu... não estou. Só não fique para trás."]
+                ], 6);
+            } else {
+                start_dialog([
+                    [_n.name, "Eu conheço uma rota segura por aqui. Você está procurando seu irmão?"],
+                    ["Ana", "Estou. Cada pista me leva mais fundo no complexo."],
+                    [_n.name, "Pegue isto. E cuidado com quem promete uma saída fácil."]
+                ], 5);
+            }
+        } else {
+            start_dialog([[_n.name, _n.revealed ? "Eu sinto muito. A coisa ainda está por perto!" : "Já te dei o que podia. Fique de olho na luz."]], 0);
+        }
+    } else {
+        active_npc = -1;
+        // Mantem o dialogo final isolado em um array nomeado; facilita revisar
+        // o evento e evita perder linhas ao copiar trechos grandes do Create.
+        var _lucas_final_dialog = [
+            ["Lucas", "Ana... você veio mesmo."],
+            ["Ana", "Lucas! Eu estou aqui, vou te tirar daí!"],
+            ["Lucas", "Eu sou a âncora, Ana. O Coração vive do meu medo. Se eu parar de temer, ele morre... e eu junto."],
             ["Lucas", "Você pode me levar embora e deixar o Coração vivo. Ou pode desligá-lo e acabar com tudo isso."],
             ["Lucas", "A escolha é sua. Eu confio em você."]
         ];
@@ -960,7 +1759,7 @@ new_game = function() {
     battery = 100; flash_on = true; flash_power = 1; sanity = 100;
     panic = 0; shake = 0; hurt_flash = 0; heart_pulse = 0; white_flash = 0; muzzle = 0;
     fade = 1; blackout = 0; blackout_cd = irandom_range(2400, 4200);
-    scare_cd = irandom_range(1200, 2400); alert_cd = 0; heart_cd = 0; step_sign = false;
+    scare_cd = irandom_range(1200, 2400); radio_cd = irandom_range(420, 900); alert_cd = 0; heart_cd = 0; step_sign = false;
     drip_cd = 300; creak_cd = 900; whisper_cd = 600; flicker_t = 0; foot_scare = 0; alarm_timer = 0;
     spawn_timer = 0; spawn_interval = irandom_range(1200, 2000);
     particles = []; floaters = []; decals = []; shots = []; tracers = []; hallu = []; dust = [];
@@ -982,6 +1781,5 @@ new_game = function() {
 };
 
 new_game();
-
 
 

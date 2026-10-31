@@ -20,10 +20,11 @@ if (mode == 1 && state != STATE_TITLE && state != STATE_INTRO) {
     camera_set_proj_mat(cam3d, matrix_build_projection_perspective_fov(-fov, gw / gh, 1, 1800));
     camera_apply(cam3d);
 
-    var _fog_end = flash_on ? 180 + 270 * flash_power : 100;
+    var _fog_end = flash_on ? 620 * flash_power : 240;
     if (blackout > 0) _fog_end *= 0.55;
     if (sanity < 30) _fog_end *= 0.8;
-    gpu_set_fog(true, c_black, 18, _fog_end);
+    var _fog_col = (cur_biome == 0) ? make_color_rgb(10, 19, 15) : make_color_rgb(13, 16, 23);
+    gpu_set_fog(true, _fog_col, 45, max(120, _fog_end));
     vertex_submit(vb_world, pr_trianglelist, -1);
 
     // Objetos do cenario sempre flutuam um pouco para continuarem legiveis.
@@ -90,8 +91,20 @@ if (mode == 1 && state != STATE_TITLE && state != STATE_INTRO) {
         if (point_distance(_npc.x, _npc.y, player.x, player.y) > 420) continue;
         var _nb = 1.5 * sin(current_time / 200 + i);
         var _npc_body = (_npc.kind == 3 && _npc.revealed) ? vb_npc_alert : vb_npc;
-        draw_box3d(_npc_body, _npc.x, _npc.y, 13 + _nb, 13, 11, 24, _npc.face);
-        draw_box3d(vb_hd[2], _npc.x, _npc.y, 30 + _nb, 10, 10, 12, _npc.face);
+        var _nf = _npc.face;
+        var _walk = sin(current_time / 95 + i * 2) * 3;
+        // Silhueta humana em camadas: casaco, ombros, cabeça, braços e pernas.
+        draw_box3d(_npc_body, _npc.x, _npc.y, 20 + _nb, 13, 9, 19, _nf);
+        draw_box3d(_npc_body, _npc.x + lengthdir_x(1, _nf), _npc.y + lengthdir_y(1, _nf), 30 + _nb, 17, 11, 10, _nf);
+        draw_box3d(vb_hd[2], _npc.x + lengthdir_x(2, _nf), _npc.y + lengthdir_y(2, _nf), 39 + _nb, 8, 8, 10, _nf);
+        for (var _side = -1; _side <= 1; _side += 2) {
+            draw_box3d(_npc_body, _npc.x + lengthdir_x(7 * _side, _nf + 90), _npc.y + lengthdir_y(7 * _side, _nf + 90), 22 + _nb + _walk * _side, 5, 6, 17, _nf + 8 * _side);
+            draw_box3d(vb_body[0], _npc.x + lengthdir_x(4 * _side, _nf + 90), _npc.y + lengthdir_y(4 * _side, _nf + 90), 6 + _nb - _walk * _side, 5, 6, 12, _nf - 8 * _side);
+        }
+        // Um pequeno reflexo ocular identifica a face quando a lanterna a alcança.
+        if (flash_on && point_distance(_npc.x, _npc.y, player.x, player.y) < flash_len) {
+            draw_box3d(vb_eye, _npc.x + lengthdir_x(6, _nf), _npc.y + lengthdir_y(6, _nf), 40 + _nb, 1.5, 1.5, 1.5, 0);
+        }
     }
 
     // O Diretor tem uma massa grande, coroa de espinhos e um nucleo pulsante.

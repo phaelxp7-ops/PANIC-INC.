@@ -161,6 +161,19 @@ shake = max(0, shake - 0.6);
 hurt_flash = max(0, hurt_flash - 0.04);
 heart_pulse = max(0, heart_pulse - 0.07);
 if (msg_timer > 0) msg_timer--;
+// Interferencias raras: uma linha curta, sem cobrir os avisos de jogo.
+if (radio_cd > 0) radio_cd--;
+if (sanity < 38 && radio_cd <= 0 && msg_timer <= 0 && state == STATE_PLAYING) {
+    var _static_lines = [
+        "RADIO: Ana... não tem ninguém na cabana.",
+        "LUCAS? [chiado] Você demorou. Ele já sabe que chegou.",
+        "VOZ DESCONHECIDA: Apague a lanterna. Quero ver seu rosto.",
+        "RÁDIO: ...a gravação foi feita amanhã. Repito: amanhã."
+    ];
+    show_msg(_static_lines[irandom(array_length(_static_lines) - 1)], 150);
+    play_snd(snd_whisper, 0.32, random_range(0.75, 1.15));
+    radio_cd = irandom_range(900, 1500);
+}
 if (zone_timer > 0) zone_timer--;
 if (alarm_timer > 0) alarm_timer--;
 if (flicker_t > 0) flicker_t--;
