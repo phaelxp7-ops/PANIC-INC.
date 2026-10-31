@@ -18,9 +18,12 @@ if (mode == 1) {
     var _fd = player.facing_dir;
     var _ex = player.x + random_range(-shake, shake) * 0.2;
     var _ey = player.y + random_range(-shake, shake) * 0.2;
-    var _ez = eye_h + sin(player.bob) * 1.8;
+    var _motion = player.is_moving ? 1 : 0.18;
+    var _sway = sin(current_time / 115) * (player.is_running ? 1.25 : 0.65) * _motion;
+    var _ez = eye_h + sin(player.bob) * (player.is_running ? 2.8 : 1.5) + sin(current_time / 430) * 0.7;
+    var _look_dir = _fd + _sway;
     var _view = matrix_build_lookat(_ex, _ey, _ez,
-                                    _ex + lengthdir_x(1, _fd), _ey + lengthdir_y(1, _fd), _ez,
+                                    _ex + lengthdir_x(1, _look_dir), _ey + lengthdir_y(1, _look_dir), _ez - 0.6,
                                     0, 0, 1);
     var _proj = matrix_build_projection_perspective_fov(-fov, -gw / gh, 1, 2000);
     camera_set_view_mat(cam3d, _view);
@@ -28,8 +31,9 @@ if (mode == 1) {
     camera_apply(cam3d);
 
     // Nevoa = alcance da lanterna
-    var _fog_end = flash_on ? (120 + 230 * flash_power) : 90;
+    var _fog_end = flash_on ? (150 + 300 * flash_power) : 105;
     if (blackout > 0) _fog_end *= 0.7;
+    _fog_end *= max(0.72, 1 - max(0, level - 3) * 0.025);
     gpu_set_fog(true, c_black, 20, _fog_end);
 
     vertex_submit(vb_world, pr_trianglelist, -1);
@@ -47,11 +51,16 @@ if (mode == 1) {
     for (var i = 0; i < array_length(enemies); i++) {
         var _en = enemies[i];
         if (point_distance(_en.x, _en.y, player.x, player.y) > 420) continue;
-        var _bz = sin(_en.anim * 0.1) * 1.5;
-        var _hgt = (_en.type == 1) ? 26 : ((_en.type == 2) ? 42 : 34);
-        var _wid = (_en.type == 1) ? 10 : 13;
-        draw_box3d(vb_body[_en.type], _en.x, _en.y, _hgt / 2 + _bz, _wid, _wid, _hgt, 0);
-        draw_box3d(vb_hd[_en.type],  _en.x, _en.y, _hgt + 6 + _bz, 12, 12, 12, 0);
+        var _stride = sin(_en.anim * 0.18) * (_en.mode == 1 ? 5 : 2);
+        var _bz = abs(sin(_en.anim * 0.18)) * (_en.mode == 1 ? 3.5 : 1.2);
+        var _hgt = (_en.type == 1) ? 29 : ((_en.type == 2) ? 44 : 36);
+        var _wid = (_en.type == 1) ? 9 : 12;
+        var _turn = _en.face + sin(_en.anim * 0.07) * 3;
+        draw_box3d(vb_body[_en.type], _en.x, _en.y, _hgt / 2 + _bz, _wid, _wid * 0.78, _hgt, _turn);
+        draw_box3d(vb_hd[_en.type], _en.x + lengthdir_x(2, _turn), _en.y + lengthdir_y(2, _turn), _hgt + 6 + _bz, 12, 12, 12, _turn + sin(_en.anim * 0.12) * 8);
+        // Bracos e pernas articulados: movimento alternado deixa a perseguicao visivel em primeira pessoa.
+        draw_box3d(vb_body[_en.type], _en.x + lengthdir_x(_stride, _turn + 90), _en.y + lengthdir_y(_stride, _turn + 90), _hgt * 0.52 + _bz, 4.5, 5, _hgt * 0.48, _turn + 12);
+        draw_box3d(vb_body[_en.type], _en.x - lengthdir_x(_stride, _turn + 90), _en.y - lengthdir_y(_stride, _turn + 90), _hgt * 0.52 + _bz, 4.5, 5, _hgt * 0.48, _turn - 12);
     }
 
     // ---- SEM NEVOA: olhos, lampadas e farol da saida (brilham no escuro) ----
@@ -61,7 +70,7 @@ if (mode == 1) {
         var _en2 = enemies[i];
         if (point_distance(_en2.x, _en2.y, player.x, player.y) > 380) continue;
         var _bz2 = sin(_en2.anim * 0.1) * 1.5;
-        var _eh = ((_en2.type == 1) ? 26 : ((_en2.type == 2) ? 42 : 34)) + 7 + _bz2;
+        var _eh = ((_en2.type == 1) ? 29 : ((_en2.type == 2) ? 44 : 36)) + 7 + _bz2;
         for (var s = -1; s <= 1; s += 2) {
             var _ox = _en2.x + lengthdir_x(7, _en2.face) + lengthdir_x(3.5 * s, _en2.face + 90);
             var _oy = _en2.y + lengthdir_y(7, _en2.face) + lengthdir_y(3.5 * s, _en2.face + 90);
