@@ -1,5 +1,24 @@
 # Changelog gráfico — PANIC INC.
 
+## Pipeline cinematográfico e controles — 2026-10-31
+
+- Adicionados `sh_bloom_extract` e `sh_cinematic`, com extração e composição de
+  brilho, tonemap ACES, gradação por bioma, vinheta, grão, aberração cromática e
+  distorção dependente de sanidade, pânico e dano.
+- O pós-processamento trata perda/redimensionamento da surface e mantém desenho
+  direto da application surface como fallback.
+- F10 alterna qualidade baixa/média/alta; a qualidade altera as amostras do
+  bloom e o alcance da neblina para equilibrar custo e leitura.
+- Sons longos de horror recebem eco discreto e limitado em áreas internas.
+- O projeto `.yyp` completo foi incluído na raiz para abrir diretamente no IDE.
+- Compilação F5 no GameMaker 2026 concluída e jogo aberto até a floresta 2D;
+  a alternância para 3D e os demais fluxos não foram validados.
+
+Etapa 3 (sprites renderizados via Blender) foi pulada conforme os
+pré-requisitos: `src/assets/models/` está vazia e Blender não está
+instalado/disponível. Os FBX third-party não foram usados como substituto.
+Ver `LEIAME.md` para efeitos ainda pendentes e `CREDITOS.md` para fontes/licenças.
+
 ## Materiais de monstros e biomas — 2026-10-31
 
 - Substituído o piso quadriculado por atlas de terreno com 64 recortes de folhas, agulhas de pinheiro, asfalto e concreto; cada tile escolhe um recorte estável, evitando o padrão repetitivo.
@@ -9,7 +28,8 @@
 - No modo 2D, os recortes de chão também aparecem no mapa, com cores diferentes por bioma.
 - Fontes, créditos, licenças CC0 e scripts para refazer os atlases estão em `src/assets/ASSETS.md` e `src/assets/`.
 
-Validação: o repositório contém apenas os eventos GML, sem o arquivo de projeto `.yyp`; por isso, não é possível compilar esse checkout isoladamente no GameMaker. A compilação precisa ser feita no projeto completo que contém esses eventos.
+Validação anterior: algumas revisões distribuíam apenas eventos e materiais, sem
+o `.yyp`. Nesta revisão o projeto e seus recursos foram incluídos para abrir no IDE.
 
 ## Problemas observados nas capturas
 
@@ -32,8 +52,8 @@ Validação: o repositório contém apenas os eventos GML, sem o arquivo de proj
 ## Limitações
 
 O renderizador atual usa malhas geradas em GML; não oferece animação esquelética,
-sombras ou materiais PBR comparáveis a GTA V/Red Dead Redemption 2. O repositório
-também não contém o projeto `.yyp` completo.
+sombras ou materiais PBR comparáveis a GTA V/Red Dead Redemption 2. O projeto
+GameMaker `.yyp` agora está incluído na raiz do repositório.
 # Atualização: correções visuais da captura 2026-10-31
 
 - Corrigido o vetor lateral do WASD no modo 3D (D/Right aponta para o lado da câmera).

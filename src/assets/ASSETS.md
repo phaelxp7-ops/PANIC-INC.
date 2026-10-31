@@ -20,7 +20,7 @@ python src/assets/materials/build_materials.py
 python src/assets/marta_materials/embed_materials.py
 ```
 
-O atlas de piso tem 16 recortes por bioma; a seleção muda por tile e a geometria 3D recebe UVs individuais. No modo 2D os mesmos recortes aparecem em escala reduzida. O projeto atual não tem `.yyp`, então os mapas são carregados pelo GML e não por recursos do navegador de assets.
+O atlas de piso tem 16 recortes por bioma; a seleção muda por tile e a geometria 3D recebe UVs individuais. No modo 2D os mesmos recortes aparecem em escala reduzida. O projeto `.yyp` fica na raiz. As texturas embutidas são carregadas por GML; os shaders ficam registrados no navegador de assets em `shaders/`.
 
 ## Fontes
 

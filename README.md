@@ -4,11 +4,15 @@
 
 RPG de terror e sobrevivência no qual Ana atravessa a floresta, Vale Sombrio e as instalações da PANIC INC. para encontrar o irmão Lucas. O protótipo inclui exploração em áreas conectadas, combate e furtividade, documentos de história, personagens, gestão de sanidade e recursos, e um confronto final com dois desfechos. Multiplayer permanece como objetivo futuro, ainda sem rede implementada.
 
-## Organização do projeto
+## Abrir no GameMaker
 
-- `src/`: projeto do GameMaker Studio (`.yyp`) e seus recursos.
-- `docs/`: documentação de game design, mecânicas, ideias e decisões do projeto.
-- `assets_raw/`: arquivos-fonte de arte e áudio antes da importação no GameMaker, como `.psd`, `.wav` e `.aseprite`.
+Abra [`PANIC INC..yyp`](PANIC%20INC..yyp) na raiz do repositório e execute com F5.
+Os quatro eventos do objeto principal ficam em `objects/obj_panic/`. Os shaders
+de pós-processamento estão em `shaders/` e são registrados no projeto.
+
+`src/` mantém os fontes GML e scripts/ferramentas de materiais usados para
+regenerar texturas. `docs/` reúne documentação; `assets_raw/` guarda arquivos
+brutos de arte e áudio ainda não importados.
 
 ## Divisão de tarefas
 
@@ -32,19 +36,23 @@ As responsabilidades podem ser combinadas em conjunto quando uma tarefa atravess
 
 ### Dev 1 — Sistemas, lógica e rede/multiplayer
 
-- [ ] Adicionar o projeto `.yyp` real e vincular os quatro eventos de `obj_panic`.
-- [ ] Compilar no GameMaker e corrigir erros de runtime com o log do IDE.
+- [x] Compilar e abrir a introdução até a floresta 2D no GameMaker.
+- [ ] Implementar iluminação por pixel com máscaras de luz e sombras suaves.
 - [ ] Testar a progressão da floresta até o chefe e equilibrar recursos/dificuldade.
 - [ ] Definir a arquitetura de servidor, lobby e sincronização antes de iniciar o multiplayer.
 
 ### Dev 2 — Level design, arte, sprites, rooms e áudio
 
-- [ ] Criar sprites/modelos próprios para Ana, NPCs, monstros e Diretor; substituir os desenhos procedurais.
+- [ ] Instalar Blender e organizar modelos CC0 em `src/assets/models/` antes de renderizar folhas de sprites.
 - [ ] Criar texturas e elementos de cenário para diferenciar as quatro regiões.
 - [ ] Preparar efeitos de áudio originais para exploração, sustos, inimigos e chefe.
-- [ ] Validar visibilidade, animações e leitura da HUD nos modos 2D e 3D.
+- [ ] Validar F10, HUD e leitura visual nos modos 2D e 3D.
 
 ## Protótipo atual
 
-Os quatro eventos-fonte de `obj_panic` ficam em [`src/obj_panic/`](src/obj_panic/). Consulte [`src/README.md`](src/README.md) para os controles, conteúdo e passos de integração. O `.yyp` e os recursos do GameMaker ainda precisam ser adicionados para abrir e compilar o jogo diretamente pelo IDE.
+O jogo combina exploração top-down e primeira pessoa, áreas geradas, notas,
+NPCs, monstros, sanidade, lanterna e chefe. O pós-processamento oferece gradação
+por região, ACES, extração/composição de brilho e efeitos de terror. F10 alterna
+entre qualidade baixa, média e alta. Leia [`LEIAME.md`](LEIAME.md) para limites
+conhecidos e [`CREDITOS.md`](CREDITOS.md) para as fontes dos materiais.
 
