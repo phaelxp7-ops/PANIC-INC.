@@ -23,6 +23,7 @@ if (mode == 1 && state != STATE_TITLE && state != STATE_INTRO) {
     var _fog_end = flash_on ? 620 * flash_power : 240;
     if (blackout > 0) _fog_end *= 0.55;
     if (sanity < 30) _fog_end *= 0.8;
+    _fog_end *= (graphics_quality == 0) ? 0.82 : ((graphics_quality == 2) ? 1.12 : 1.0);
     var _fog_col = (cur_biome == 0) ? make_color_rgb(10, 19, 15) : make_color_rgb(13, 16, 23);
     gpu_set_fog(true, _fog_col, 45, max(120, _fog_end));
     for (var _gb = 0; _gb < array_length(vb_floor); _gb++) {
@@ -446,6 +447,3 @@ if (flash_on) {
 // Vinheta e lampejo dao resposta visual ao dano e a baixa sanidade.
 if (hurt_flash > 0) { draw_set_color(c_red); draw_set_alpha(hurt_flash * 0.28); fillrect(_view_x, _view_y, _view_x + vw, _view_y + vh); draw_set_alpha(1); }
 if (white_flash > 0) { draw_set_color(c_white); draw_set_alpha(white_flash * 0.45); fillrect(_view_x, _view_y, _view_x + vw, _view_y + vh); draw_set_alpha(1); }
-
-
-

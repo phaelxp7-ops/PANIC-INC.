@@ -8,6 +8,27 @@ if (keyboard_check_pressed(ord("N"))) {
     audio_master_gain(sfx_on ? 0.9 : 0);
 }
 
+// F10 alterna os custos do pós-processamento sem alterar mecânicas do jogo.
+if (keyboard_check_pressed(vk_f10)) {
+    graphics_quality = (graphics_quality + 1) mod 3;
+    quality_notice = 150;
+    play_snd(snd_click, 0.35, 1 + graphics_quality * 0.12);
+}
+if (quality_notice > 0) quality_notice--;
+
+// Eco ambiental atrasado, limitado para não empilhar vozes demais.
+for (var _echo_i = array_length(reverb_queue) - 1; _echo_i >= 0; _echo_i--) {
+    var _echo = reverb_queue[_echo_i];
+    _echo.delay--;
+    reverb_queue[_echo_i] = _echo;
+    if (_echo.delay <= 0) {
+        var _echo_voice = audio_play_sound(_echo.sound, 4, false);
+        audio_sound_gain(_echo_voice, _echo.gain, 0);
+        audio_sound_pitch(_echo_voice, _echo.pitch);
+        array_delete(reverb_queue, _echo_i, 1);
+    }
+}
+
 // ---------- TITULO ----------
 if (state == STATE_TITLE) {
     window_set_cursor(cr_default);
@@ -734,5 +755,3 @@ if (player.hp <= 0) {
     play_snd(snd_growl, 1, 0.6);
     state = STATE_GAMEOVER;
 }
-
-

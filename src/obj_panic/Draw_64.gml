@@ -4,6 +4,44 @@ draw_set_halign(fa_left);
 draw_set_valign(fa_top);
 draw_set_alpha(1);
 
+// Composição em duas passagens: extração de brilho e gradação cinematográfica.
+// Se uma surface se perder ou o shader falhar, volta ao desenho padrão da surface.
+if (surface_exists(application_surface)) {
+    var _post_w = surface_get_width(application_surface);
+    var _post_h = surface_get_height(application_surface);
+    if (_post_w != post_surface_w || _post_h != post_surface_h || !surface_exists(post_bloom_surface)) {
+        if (surface_exists(post_bloom_surface)) surface_free(post_bloom_surface);
+        post_surface_w = _post_w; post_surface_h = _post_h;
+        post_bloom_surface = surface_create(post_surface_w, post_surface_h);
+    }
+
+    if (post_ready && surface_exists(post_bloom_surface)
+        && shader_is_compiled(sh_cinematic) && shader_is_compiled(sh_bloom_extract)) {
+        surface_set_target(post_bloom_surface);
+        draw_clear_alpha(c_black, 1);
+        shader_set(sh_bloom_extract);
+        shader_set_uniform_f(post_bloom_u_resolution, post_surface_w, post_surface_h);
+        shader_set_uniform_f(post_bloom_u_threshold, 0.74);
+        draw_surface(application_surface, 0, 0);
+        shader_reset();
+        surface_reset_target();
+
+        shader_set(sh_cinematic);
+        shader_set_uniform_f(post_u_resolution, post_surface_w, post_surface_h);
+        shader_set_uniform_f(post_u_sanity, clamp(sanity / 100, 0, 1));
+        shader_set_uniform_f(post_u_panic, clamp(panic / 100, 0, 1));
+        shader_set_uniform_f(post_u_hurt, clamp(hurt_flash, 0, 1));
+        shader_set_uniform_f(post_u_biome, cur_biome);
+        shader_set_uniform_f(post_u_quality, graphics_quality);
+        shader_set_uniform_f(post_u_time, current_time / 1000);
+        texture_set_stage(post_bloom_sampler, surface_get_texture(post_bloom_surface));
+        draw_surface(application_surface, 0, 0);
+        shader_reset();
+    } else {
+        draw_surface(application_surface, 0, 0);
+    }
+}
+
 // Tela inicial cinematografica.
 if (state == STATE_TITLE) {
     draw_set_color(make_color_rgb(4, 5, 10)); fillrect(0, 0, gw, gh);
@@ -198,6 +236,11 @@ if (zone_timer > 0 && state == STATE_PLAYING) { draw_set_halign(fa_center); gtex
 
 draw_set_halign(fa_left);
 gtext(20, gh - 28, "TAB modo " + (mode == 0 ? "2D" : "3D") + "  |  F lanterna  |  H cura  |  Q sanidade  |  R bateria  |  J diário  |  M mapa  |  N som  |  ESC pausa", 0.78, c_ltgray);
+if (quality_notice > 0) {
+    draw_set_halign(fa_right);
+    gtext(gw - 22, gh - 52, "GRÁFICOS: " + graphics_quality_names[graphics_quality] + " [F10]", 0.85, c_aqua);
+    draw_set_halign(fa_left);
+}
 
 // Efeitos de terror em primeira pessoa: vignette, desfoque simulado e interferencia.
 var _vignette = clamp((100 - sanity) / 150 + panic / 240 + hurt_flash * 0.35, 0, 0.72);
@@ -292,4 +335,3 @@ if (state == STATE_PAUSED || state == STATE_JOURNAL || state == STATE_MAP) {
 if (fade > 0 && state == STATE_PLAYING) { draw_set_color(c_black); draw_set_alpha(fade); fillrect(0, 0, gw, gh); draw_set_alpha(1); }
 draw_set_alpha(1);
 draw_set_halign(fa_left);
-

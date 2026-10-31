@@ -11,9 +11,9 @@ END = "// <PANIC_TEXTURES_END>"
 def gml_data_url(variable: str, image: Path) -> str:
     encoded = base64.b64encode(image.read_bytes()).decode("ascii")
     chunks = [encoded[i:i + 96] for i in range(0, len(encoded), 96)]
-    lines = [f'var _{variable}_data = "data:image/jpeg;base64," +']
-    lines.extend(f'    "{chunk}"' + (" +" if i < len(chunks) - 1 else ";")
-                 for i, chunk in enumerate(chunks))
+    # Incremental appends avoid GameMaker's maximum expression-stack depth.
+    lines = [f'var _{variable}_data = "data:image/jpeg;base64,";']
+    lines.extend(f'_{variable}_data += "{chunk}";' for chunk in chunks)
     lines.append(f'{variable} = sprite_add(_{variable}_data, 1, false, true, 0, 0);')
     return "\n".join(lines)
 
