@@ -329,7 +329,11 @@ if (panic > 25) {
         heart_cd = lerp(70, 22, clamp(panic / 100, 0, 1));
     }
 }
-if ((level_time mod 10) == 0) audio_sound_gain(drone_inst, 0.25 + panic / 100 * 0.5, 200);
+if ((level_time mod 10) == 0) {
+    // A trilha fica mais opressiva com a proximidade e a profundidade do complexo.
+    var _phase_drone = min(0.22, max(0, level - 1) * 0.018);
+    audio_sound_gain(drone_inst, clamp(0.18 + panic / 100 * 0.42 + _phase_drone, 0.18, 0.82), 250);
+}
 drip_cd--;
 if (drip_cd <= 0) {
     play_snd(snd_drip, 0.25, random_range(0.7, 1.3));
