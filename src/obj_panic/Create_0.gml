@@ -1,5 +1,5 @@
-Warning: truncated output (original token count: 18607)
-Total output lines: 1779
+Warning: truncated output (original token count: 18660)
+Total output lines: 1782
 
 // ============================================================
 // PANIC INC. v4 - "O CORACAO DO MEDO"
@@ -459,10 +459,11 @@ gen_forest = function() {
     carve_disc(9, 42, 9, 0);
     carve_disc(30, 12, 7, 0);
     carve_disc(36, 62, 6, 0);
-   …8607 tokens truncated…Ana. O Coração vive do meu medo. Se eu parar de temer, ele morre... e eu junto."],
+   …8660 tokens truncated…arar de temer, ele morre... e eu junto."],
             ["Lucas", "Você pode me levar embora e deixar o Coração vivo. Ou pode desligá-lo e acabar com tudo isso."],
             ["Lucas", "A escolha é sua. Eu confio em você."]
-        ], 4);
+        ];
+        start_dialog(_lucas_final_dialog, 4);
     }
 };
 
