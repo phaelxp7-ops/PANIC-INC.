@@ -51,14 +51,22 @@ if (mode == 1 && state != STATE_TITLE && state != STATE_INTRO) {
         var _height = en_h[_type];
         var _width = en_w[_type];
         if (_type == 1) {
-            draw_box3d(vb_body[_type], _en.x, _en.y, 9 + _bob, 22, 16, 13, _turn);
-            draw_box3d(vb_hd[_type], _en.x + lengthdir_x(12, _turn), _en.y + lengthdir_y(12, _turn), 13 + _bob, 12, 12, 10, _turn);
+            // O Rastejante se arrasta baixo, com coluna arqueada e bracos longos.
+            draw_box3d(vb_body[_type], _en.x, _en.y, 10 + _bob, 25, 15, 11, _turn);
+            draw_box3d(vb_hd[_type], _en.x + lengthdir_x(16, _turn), _en.y + lengthdir_y(16, _turn), 13 + _bob, 13, 12, 9, _turn);
             for (var s = -1; s <= 1; s += 2) {
-                draw_box3d(vb_body[_type], _en.x + lengthdir_x(8 * s, _turn + 90), _en.y + lengthdir_y(8 * s, _turn + 90), 5 + _bob, 16, 4, 4, _turn + 15 * s);
+                draw_box3d(vb_body[_type], _en.x + lengthdir_x(9 * s, _turn + 90), _en.y + lengthdir_y(9 * s, _turn + 90), 6 + _bob, 21, 4, 5, _turn + 18 * s);
+                draw_box3d(vb_spike, _en.x + lengthdir_x(22, _turn) + lengthdir_x(9 * s, _turn + 90), _en.y + lengthdir_y(22, _turn) + lengthdir_y(9 * s, _turn + 90), 4 + _bob, 5, 5, 10, _turn + 90 * s);
             }
         } else {
-            draw_box3d(vb_body[_type], _en.x, _en.y, _height * 0.48 + _bob, _width * 1.8, _width * 1.35, _height * 0.75, _turn);
-            draw_box3d(vb_hd[_type], _en.x + lengthdir_x(2, _turn), _en.y + lengthdir_y(2, _turn), _height * 0.88 + _bob, _type == 3 ? 12 : 14, 12, _type == 3 ? 15 : 14, _turn);
+            draw_box3d(vb_body[_type], _en.x, _en.y, _height * 0.43 + _bob, _width * 1.65, _width * 1.25, _height * 0.82, _turn);
+            // Cabeca afundada nos ombros e nucleo vermelho visivel na penumbra.
+            draw_box3d(vb_hd[_type], _en.x + lengthdir_x(5, _turn), _en.y + lengthdir_y(5, _turn), _height * 0.84 + _bob, _type == 3 ? 13 : 11, 10, _type == 3 ? 17 : 12, _turn);
+            var _face_x = _en.x + lengthdir_x(11, _turn);
+            var _face_y = _en.y + lengthdir_y(11, _turn);
+            for (var _eye_side = -1; _eye_side <= 1; _eye_side += 2) {
+                draw_box3d(vb_core, _face_x + lengthdir_x(3.5 * _eye_side, _turn + 90), _face_y + lengthdir_y(3.5 * _eye_side, _turn + 90), _height * 0.9 + _bob, 2.8, 2.8, 2.8, 0);
+            }
             for (var s = -1; s <= 1; s += 2) {
                 var _sx = _en.x + lengthdir_x(7 * s, _turn + 90);
                 var _sy = _en.y + lengthdir_y(7 * s, _turn + 90);
@@ -69,6 +77,10 @@ if (mode == 1 && state != STATE_TITLE && state != STATE_INTRO) {
                 draw_box3d(vb_spike, _en.x - lengthdir_x(5, _turn + 90), _en.y - lengthdir_y(5, _turn + 90), _height + 12 + _bob, 8, 8, 22, _turn - 18);
                 draw_box3d(vb_spike, _en.x + lengthdir_x(5, _turn + 90), _en.y + lengthdir_y(5, _turn + 90), _height + 12 + _bob, 8, 8, 22, _turn + 18);
                 draw_box3d(vb_spike, _en.x, _en.y, _height + 16 + _bob, 5, 5, 18, _turn);
+                // Espinhos quebrados ao longo das costas tornam a silhueta legivel de longe.
+                for (var _sp = 0; _sp < 4; _sp++) {
+                    draw_box3d(vb_spike, _en.x - lengthdir_x(8 + _sp * 5, _turn), _en.y - lengthdir_y(8 + _sp * 5, _turn), _height * 0.72 + _bob, 6, 7, 18 - _sp * 2, _turn + 90);
+                }
             }
         }
     }
@@ -303,5 +315,6 @@ if (flash_on) {
 // Vinheta e lampejo dao resposta visual ao dano e a baixa sanidade.
 if (hurt_flash > 0) { draw_set_color(c_red); draw_set_alpha(hurt_flash * 0.28); fillrect(_view_x, _view_y, _view_x + vw, _view_y + vh); draw_set_alpha(1); }
 if (white_flash > 0) { draw_set_color(c_white); draw_set_alpha(white_flash * 0.45); fillrect(_view_x, _view_y, _view_x + vw, _view_y + vh); draw_set_alpha(1); }
+
 
 
