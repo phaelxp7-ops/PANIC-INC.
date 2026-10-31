@@ -522,7 +522,7 @@ build_3d = function() {
                     vquad(vb_world, _x1+5,_y1+23,0.35, _x1+tile-5,_y1+23,0.35, _x1+tile-5,_y1+25,0.35, _x1+5,_y1+25,0.35, _gc);
                 } else if (((c * 5 + r * 11) mod 17) == 0) {
                     var _stain = shade(make_color_rgb(72, 27, 31), _k * 0.72);
-                    vquad(_x1+8,_y1+15,0.25, _x1+18,_y1+13,0.25, _x1+22,_y1+18,0.25, _x1+10,_y1+20,0.25, _stain);
+                    vquad(vb_world, _x1+8,_y1+15,0.25, _x1+18,_y1+13,0.25, _x1+22,_y1+18,0.25, _x1+10,_y1+20,0.25, _stain);
                 }
                 vquad(vb_world, _x1,_y1,wall_h, _x2,_y1,wall_h, _x2,_y2,wall_h, _x1,_y2,wall_h, make_color_rgb(40, 40, 52));
             } else {
