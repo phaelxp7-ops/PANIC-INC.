@@ -52,7 +52,9 @@ func _configurar_idle(modelo: Node3D) -> void:
 	if _animacao == null or packed == null:
 		return
 	var origem_root: Node = packed.instantiate()
-	var origem: AnimationPlayer = (\n\t\torigem_root.find_child("AnimationPlayer", true, false) as AnimationPlayer\n\t)
+	var origem: AnimationPlayer = (
+		origem_root.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	)
 	if origem == null:
 		origem_root.free()
 		return
