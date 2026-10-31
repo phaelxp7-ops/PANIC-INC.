@@ -139,6 +139,7 @@ if (mode == 0) {
         var _wcx = window_get_width() / 2;
         var _wcy = window_get_height() / 2;
         player.facing_dir -= (window_mouse_get_x() - _wcx) * mouse_sens;
+        camera_pitch = clamp(camera_pitch - (window_mouse_get_y() - _wcy) * mouse_sens_y, -32, 32);
         window_mouse_set(_wcx, _wcy);
     }
 }
@@ -304,9 +305,21 @@ for (var i = 0; i < array_length(enemies); i++) {
 
     // Dano
     var _hr = (_e.type == 1) ? 17 : 19;
-    if (_dist < _hr) hurt_player((_e.type == 1) ? 8 : 14);
+    if (_dist < _hr) hurt_player(((_e.type == 1) ? 8 : 14) + floor(_e.danger * 3));
 }
 panic = lerp(panic, clamp(100 - _nearest / 3.2, 0, 100), 0.05);
+
+// Identifica a estrutura mais proxima para exibir tipo e risco da area.
+if ((level_time mod 20) == 0) {
+    var _near_room = 0;
+    var _near_room_dist = 1000000;
+    for (var k = 0; k < array_length(rooms); k++) {
+        var _room_info = rooms[k];
+        var _room_dist = point_distance(player.x, player.y, (_room_info.x + _room_info.w * 0.5) * tile, (_room_info.y + _room_info.h * 0.5) * tile);
+        if (_room_dist < _near_room_dist) { _near_room_dist = _room_dist; _near_room = k; }
+    }
+    current_zone = rooms[_near_room];
+}
 
 // Novos inimigos com o tempo
 spawn_timer++;
@@ -332,7 +345,8 @@ if (panic > 25) {
 if ((level_time mod 10) == 0) {
     // A trilha fica mais opressiva com a proximidade e a profundidade do complexo.
     var _phase_drone = min(0.22, max(0, level - 1) * 0.018);
-    audio_sound_gain(drone_inst, clamp(0.18 + panic / 100 * 0.42 + _phase_drone, 0.18, 0.82), 250);
+    var _zone_drone = current_zone.danger * 0.12;
+    audio_sound_gain(drone_inst, clamp(0.18 + panic / 100 * 0.42 + _phase_drone + _zone_drone, 0.18, 0.82), 250);
 }
 drip_cd--;
 if (drip_cd <= 0) {
@@ -365,6 +379,19 @@ if (nearby_item != -1 && keyboard_check_pressed(ord("E"))) {
     switch (_it.type) {
         case 0:
             docs_got++;
+            player.xp++;
+            if (player.xp >= player.xp_next) {
+                player.xp -= player.xp_next;
+                player.rank++;
+                player.xp_next += 2;
+                player.hp_max += 8;
+                player.stamina_max += 5;
+                player.hp = min(player.hp_max, player.hp + 20);
+                player.stamina = player.stamina_max;
+                pontos += 250;
+                show_msg("NIVEL DE CAMPO " + string(player.rank) + "! VIDA E VIGOR AUMENTARAM", 210);
+                play_snd(snd_win, 0.5, 1.1);
+            }
             combo = (combo_timer > 0) ? combo + 1 : 1;
             combo_timer = 60 * 18;
             var _gain = 100 * combo;
@@ -416,7 +443,9 @@ if (nearby_item != -1 && keyboard_check_pressed(ord("E"))) {
 if (exit_open) {
     var _exx = exit_c * tile + tile / 2;
     var _exy = exit_r * tile + tile / 2;
-    if (point_distance(player.x, player.y, _exx, _exy) < 26) {
+    // Extrair agora e uma escolha: o jogador pode continuar explorando e saqueando.
+    if (point_distance(player.x, player.y, _exx, _exy) < 34 && nearby_item == -1
+        && keyboard_check_pressed(ord("E"))) {
         last_bonus = max(0, 500 - floor(level_time / 60) * 4);
         pontos += 250 + last_bonus;
         best_pontos = max(best_pontos, pontos);
