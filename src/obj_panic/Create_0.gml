@@ -64,15 +64,15 @@ battery = 100; flash_on = true; flash_power = 1;
 panic = 0; shake = 0; hurt_flash = 0; heart_pulse = 0;
 msg = ""; msg_timer = 0;
 level_time = 0; last_bonus = 0;
-nearby_item = -1;
+nearby_item = -1; nearby_npc = -1;
 cam_x = 0; cam_y = 0;
 fade = 1;
 combo = 0; combo_timer = 0;
 blackout = 0; blackout_cd = 2400;
 flare_charges = 2; flare_pulse = 0; flare_x = 0; flare_y = 0;
 alert_cd = 0; heart_cd = 0; step_sign = false; drip_cd = 300; creak_cd = 900;
-jumpscare = 0; jumpscare_type = 0;
-particles = []; enemies = []; items = []; rooms = [];
+jumpscare = 0; jumpscare_type = 0; contract_flash = 0;
+particles = []; enemies = []; items = []; rooms = []; npcs = [];
 lamps = []; decals = []; floaters = []; dust = [];
 vb_world = -1;
 docs_total = 1; docs_got = 0;
@@ -494,6 +494,47 @@ draw_box3d = function(_vb, _x, _y, _z, _sx, _sy, _sz, _rz) {
     matrix_set(matrix_world, matrix_build_identity());
 };
 
+// Malhas organicas low-poly: volumes arredondados com facetamento e cor por anel.
+make_sphere = function(_c) {
+    var _vb = vertex_create_buffer();
+    vertex_begin(_vb, vf);
+    var _lat_steps = 8;
+    var _lon_steps = 12;
+    for (var _lat = 0; _lat < _lat_steps; _lat++) {
+        var _a0 = -pi * 0.5 + pi * _lat / _lat_steps;
+        var _a1 = -pi * 0.5 + pi * (_lat + 1) / _lat_steps;
+        var _z0 = sin(_a0) * 0.5;
+        var _z1 = sin(_a1) * 0.5;
+        var _r0 = cos(_a0) * 0.5;
+        var _r1 = cos(_a1) * 0.5;
+        for (var _lon = 0; _lon < _lon_steps; _lon++) {
+            var _t0 = 2 * pi * _lon / _lon_steps;
+            var _t1 = 2 * pi * (_lon + 1) / _lon_steps;
+            var _shade = 0.62 + 0.38 * (1 - abs((_lat / _lat_steps) - 0.5));
+            vquad(_vb, cos(_t0)*_r0, sin(_t0)*_r0, _z0, cos(_t1)*_r0, sin(_t1)*_r0, _z0,
+                        cos(_t1)*_r1, sin(_t1)*_r1, _z1, cos(_t0)*_r1, sin(_t0)*_r1, _z1, shade(_c, _shade));
+        }
+    }
+    vertex_end(_vb);
+    vertex_freeze(_vb);
+    return _vb;
+};
+
+make_spike = function(_c) {
+    var _vb = vertex_create_buffer();
+    vertex_begin(_vb, vf);
+    for (var _i = 0; _i < 10; _i++) {
+        var _a0 = 2 * pi * _i / 10;
+        var _a1 = 2 * pi * (_i + 1) / 10;
+        vv(_vb, cos(_a0)*0.5, sin(_a0)*0.5, -0.5, shade(_c, 0.65));
+        vv(_vb, cos(_a1)*0.5, sin(_a1)*0.5, -0.5, shade(_c, 0.8));
+        vv(_vb, 0, 0, 0.5, _c);
+    }
+    vertex_end(_vb);
+    vertex_freeze(_vb);
+    return _vb;
+};
+
 wall_face = function(_ax, _ay, _bx, _by, _k, _theme) {
     var _base = make_color_rgb(120, 125, 150);
     if (_theme == 1) _base = make_color_rgb(105, 145, 125);
@@ -570,10 +611,14 @@ vb_bat   = make_box(make_color_rgb(80, 220, 255));
 vb_fuse  = make_box(make_color_rgb(255, 145, 40));
 vb_relic = make_box(make_color_rgb(205, 70, 255));
 vb_lamp  = make_box(make_color_rgb(255, 230, 150));
-vb_body  = [make_box(make_color_rgb(120, 20, 25)), make_box(make_color_rgb(100, 40, 140)), make_box(make_color_rgb(200, 200, 215)), make_box(make_color_rgb(18, 12, 20))];
-vb_hd    = [make_box(make_color_rgb(190, 50, 50)), make_box(make_color_rgb(160, 80, 210)), make_box(make_color_rgb(240, 240, 250)), make_box(make_color_rgb(45, 10, 18))];
+vb_body  = [make_sphere(make_color_rgb(120, 20, 25)), make_sphere(make_color_rgb(100, 40, 140)), make_sphere(make_color_rgb(200, 200, 215)), make_sphere(make_color_rgb(18, 12, 20))];
+vb_hd    = [make_sphere(make_color_rgb(190, 50, 50)), make_sphere(make_color_rgb(160, 80, 210)), make_sphere(make_color_rgb(240, 240, 250)), make_sphere(make_color_rgb(45, 10, 18))];
 vb_eye   = make_box(make_color_rgb(255, 255, 80));
 vb_eye_watcher = make_box(make_color_rgb(255, 24, 42));
+vb_spike = make_spike(make_color_rgb(90, 8, 18));
+vb_npc_body = make_sphere(make_color_rgb(45, 92, 132));
+vb_npc_head = make_sphere(make_color_rgb(185, 145, 112));
+vb_npc_traitor = make_sphere(make_color_rgb(66, 18, 30));
 vb_exit_open = make_box(make_color_rgb(60, 255, 90));
 vb_exit_lock = make_box(make_color_rgb(200, 40, 40));
 
@@ -679,6 +724,18 @@ generate_level = function() {
             exit_r = _rk.y + _rk.h div 2;
         }
     }
+
+    // Sobreviventes surgem em locais distintos e podem ser aliados ou traidores.
+    npcs = [];
+    var _npc_count = min(2, 1 + floor(max(0, level - 2) / 4));
+    repeat (_npc_count) {
+        var _nr = rooms[irandom_range(1, array_length(rooms) - 1)];
+        var _nx = (_nr.x + _nr.w * 0.5) * tile;
+        var _ny = (_nr.y + _nr.h * 0.5) * tile;
+        array_push(npcs, { x : _nx, y : _ny, home_x : _nx, home_y : _ny,
+                           traitor : (random(1) < 0.42), used : false, revealed : false,
+                           anim : random(360), face : random(360) });
+    }
     exit_open = false;
     alarm_on = false;
 
@@ -718,6 +775,7 @@ generate_level = function() {
     particles = [];
 
     level_time = 0;
+    jumpscare = 0; contract_flash = 0;
     shake = 0; hurt_flash = 0; panic = 0; heart_pulse = 0;
     blackout = 0; blackout_cd = irandom_range(1800, 3000);
     combo = 0; combo_timer = 0;
@@ -751,6 +809,9 @@ gain_field_xp = function(_amount) {
 
 complete_contract = function() {
     if (exit_open) return;
+    contract_flash = 55;
+    add_particles(player.x, player.y, 52, c_aqua, 4.5);
+    add_particles(player.x, player.y, 28, c_yellow, 3.2);
     exit_open = true;
     alarm_on = true;
     var _ai = audio_play_sound(snd_alarm, 10, true);
