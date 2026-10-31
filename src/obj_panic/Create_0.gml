@@ -66,6 +66,7 @@ cam_x = 0; cam_y = 0;
 fade = 1;
 combo = 0; combo_timer = 0;
 blackout = 0; blackout_cd = 2400;
+flare_charges = 2; flare_pulse = 0; flare_x = 0; flare_y = 0;
 alert_cd = 0; heart_cd = 0; step_sign = false; drip_cd = 300; creak_cd = 900;
 particles = []; enemies = []; items = []; rooms = [];
 lamps = []; decals = []; floaters = []; dust = [];
@@ -370,7 +371,7 @@ spawn_enemy = function(_mind) {
     array_push(enemies, {
         x : _p.x, y : _p.y, spd : _spd, type : _type,
         face : random(360), anim : random(360), lit : false,
-        mode : 0, wdir : random(360), wt : irandom_range(30, 90), lost : 0
+        mode : 0, wdir : random(360), wt : irandom_range(30, 90), lost : 0, stun : 0
     });
 };
 
@@ -643,6 +644,7 @@ generate_level = function() {
     shake = 0; hurt_flash = 0; panic = 0; heart_pulse = 0;
     blackout = 0; blackout_cd = irandom_range(1800, 3000);
     combo = 0; combo_timer = 0;
+    flare_charges = 2; flare_pulse = 0;
     fade = 1;
     cam_x = clamp(player.x - vw / 2, 0, cols * tile - vw);
     cam_y = clamp(player.y - vh / 2, 0, rows * tile - vh);
