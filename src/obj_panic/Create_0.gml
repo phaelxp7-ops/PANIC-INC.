@@ -107,6 +107,7 @@ msg = ""; msg_timer = 0; zone_name = ""; zone_timer = 0;
 sfx_on = true;
 near_lamps = []; vis_prev = [];
 nearby_kind = -1; nearby_idx = -1; prompt = "";
+active_npc = -1;
 cam_x = 0; cam_y = 0;
 title_eyes = [];
 repeat (16) array_push(title_eyes, { x : random(gw), y : random(gh), ph : random(360), s : random_range(0.6, 1.6) });
@@ -823,6 +824,21 @@ populate_world = function() {
     var _lx = [101, 112, 101, 112];
     var _ly = [67, 67, 72, 72];
     for (var k = 0; k < 4; k++) add_lamp(tc(_lx[k]), tc(_ly[k]), make_color_rgb(255, 40, 40), false);
+
+    // Encontros opcionais mudam de lugar a cada nova partida. Alguns sobreviventes ajudam;
+    // outros usam a confianca da Ana para atrair uma criatura.
+    repeat (irandom_range(1, 2)) {
+        var _bio = choose(1, 2);
+        var _origin_x = (_bio == 1) ? tc(60) : tc(91);
+        var _origin_y = (_bio == 1) ? tc(40) : tc(27);
+        var _p = pick_spot(_bio, _origin_x, _origin_y, 260);
+        array_push(npcs, {
+            x : _p.x, y : _p.y, kind : 3,
+            name : choose("Lia", "Bento", "Ravi", "Mila"),
+            traitor : (random(1) < 0.38), used : false, revealed : false,
+            face : random(360), anim : random(360)
+        });
+    }
 };
 
 generate_world = function() {
@@ -1068,6 +1084,7 @@ vb_body  = [make_sphere(make_color_rgb(70, 76, 100)), make_sphere(make_color_rgb
 vb_hd    = [make_sphere(make_color_rgb(110, 118, 140)), make_sphere(make_color_rgb(150, 70, 50)), make_sphere(make_color_rgb(240, 240, 250)), make_sphere(make_color_rgb(70, 40, 100))];
 vb_eye   = make_sphere(make_color_rgb(255, 255, 80));
 vb_npc   = make_sphere(make_color_rgb(190, 110, 130));
+vb_npc_alert = make_sphere(make_color_rgb(125, 18, 28));
 vb_boss  = make_sphere(make_color_rgb(130, 10, 20));
 vb_core  = make_sphere(make_color_rgb(255, 50, 50));
 vb_spike = make_spike(make_color_rgb(24, 8, 18));
@@ -1209,7 +1226,28 @@ npc_talk = function(_n) {
         } else {
             start_dialog([["Tomás", "Fique na luz, Ana. Sempre na luz."], ["Tomás", get_objective()]], 0);
         }
+    } else if (_n.kind == 3) {
+        active_npc = _n;
+        if (!_n.used) {
+            _n.used = true;
+            if (_n.traitor) {
+                start_dialog([
+                    [_n.name, "Ei! Você parece saber se virar. Minha mochila ficou perto da luz, vem comigo."],
+                    ["Ana", "Por que você está tremendo?"],
+                    [_n.name, "Eu... não estou. Só não fique para trás."]
+                ], 6);
+            } else {
+                start_dialog([
+                    [_n.name, "Eu conheço uma rota segura por aqui. Você está procurando seu irmão?"],
+                    ["Ana", "Estou. Cada pista me leva mais fundo no complexo."],
+                    [_n.name, "Pegue isto. E cuidado com quem promete uma saída fácil."]
+                ], 5);
+            }
+        } else {
+            start_dialog([[_n.name, _n.revealed ? "Eu sinto muito. A coisa ainda está por perto!" : "Já te dei o que podia. Fique de olho na luz."]], 0);
+        }
     } else {
+        active_npc = -1;
         start_dialog([
             ["Lucas", "Ana... você veio mesmo."],
             ["Ana", "Lucas! Eu estou aqui, vou te tirar daí!"],
@@ -1240,6 +1278,28 @@ finish_dialog = function() {
     if (_code == 4) {
         lucas_met = true;
         state = STATE_ENDCHOICE;
+    }
+    if (_code == 5) {
+        meds++;
+        ammo += has_gun ? 2 : 0;
+        if (active_npc != -1) active_npc.used = true;
+        show_msg("A pessoa deixou um kit médico e munição. Encontro concluído.", 220);
+        play_snd(snd_pick, 0.7, 1.15);
+        active_npc = -1;
+    }
+    if (_code == 6) {
+        if (active_npc != -1) active_npc.revealed = true;
+        blackout = max(blackout, 150);
+        flicker_t = 75;
+        alarm_timer = max(alarm_timer, 420);
+        var _ambush = pick_spot(cur_biome, player.x, player.y, 170);
+        var _attacker = spawn_enemy_at(choose(0, 1, 2), _ambush.x, _ambush.y);
+        _attacker.mode = 1;
+        _attacker.summoned = true;
+        show_msg("TRAÍRA! A luz apagou e algo veio pelo caminho que você mostrou.", 260);
+        play_snd(snd_scare, 0.9, 0.8);
+        shake = max(shake, 12);
+        active_npc = -1;
     }
 };
 
@@ -1681,6 +1741,7 @@ new_game = function() {
     talked_marta = false; talked_tomas = false; lucas_met = false;
     boss_started = false; boss_dead = false; boss = -1; boss_mus_inst = -1;
     notes_found = [0];
+    active_npc = -1;
     kills = 0; deaths = 0; play_time = 0;
     speed_mult = 1; stam_mult = 1; batt_mult = 1; hear_mult = 1; dmg_mult = 1; sanity_mult = 1;
     flash_len = 200; flash_angle = 28;
@@ -1712,4 +1773,5 @@ new_game = function() {
 };
 
 new_game();
+
 

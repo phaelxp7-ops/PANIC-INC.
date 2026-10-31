@@ -7,7 +7,7 @@ Esta pasta contém os quatro eventos de `obj_panic` da versão v4: `Create_0.gml
 - Campanha contínua por quatro regiões: floresta, Vale Sombrio, complexo PANIC INC. e subsolo.
 - História de Ana procurando o irmão Lucas, contada por cenas, diálogos e documentos que podem ser relidos no diário.
 - Progressão com chave, cartão de acesso e fusíveis para abrir áreas; há suprimentos, checkpoints e ameaças que mudam conforme a região.
-- Encontros com quatro tipos de inimigo, sustos e alucinações ligados à sanidade, apagões, armadilhas, NPCs com informação/recompensas e uma luta final em três fases contra o Diretor.
+- Encontros com quatro tipos de inimigo, sustos e alucinações ligados à sanidade, apagões e armadilhas. Sobreviventes opcionais aparecem em lugares sorteados: podem dar suprimentos ou atrair uma emboscada. A campanha culmina numa luta em três fases contra o Diretor.
 - Dois finais com escolha do jogador.
 - Câmera 3D com mouse na horizontal e vertical, modo 2D e interface com objetivo, inventário, sanidade e mapa explorado.
 - Malhas low-poly e detalhes procedurais para as criaturas. A arte é geométrica, não há modelos ou texturas realistas importados.
@@ -30,4 +30,5 @@ Controles principais: `WASD` move; `Shift` corre; mouse move a câmera no modo 3
 - O modo multiplayer não foi implementado nesta versão. A estrutura de `player` mantém campos para sincronização futura, mas não há lobby, servidor, replicação nem conexão de rede.
 - O mapa é gerado e desenhado por código. É uma base jogável de exploração, não um mundo aberto com arte final, navegação por quests ou saves de campanha completos.
 - O repositório ainda não tem `.yyp`, sprites, fontes importadas nem projeto para compilar. A integração e compilação precisam acontecer no projeto real do GameMaker.
+
 

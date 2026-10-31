@@ -76,7 +76,8 @@ if (mode == 1 && state != STATE_TITLE && state != STATE_INTRO) {
         var _npc = npcs[i];
         if (point_distance(_npc.x, _npc.y, player.x, player.y) > 420) continue;
         var _nb = 1.5 * sin(current_time / 200 + i);
-        draw_box3d(vb_npc, _npc.x, _npc.y, 13 + _nb, 13, 11, 24, _npc.face);
+        var _npc_body = (_npc.kind == 3 && _npc.revealed) ? vb_npc_alert : vb_npc;
+        draw_box3d(_npc_body, _npc.x, _npc.y, 13 + _nb, 13, 11, 24, _npc.face);
         draw_box3d(vb_hd[2], _npc.x, _npc.y, 30 + _nb, 10, 10, 12, _npc.face);
     }
 
@@ -248,7 +249,8 @@ for (var i = 0; i < array_length(items); i++) {
 for (var i = 0; i < array_length(npcs); i++) {
     var _npc = npcs[i]; var _nx = floor(_npc.x / tile); var _ny = floor(_npc.y / tile);
     if (_nx < 0 || _ny < 0 || _nx >= cols || _ny >= rows || !vis[_nx][_ny]) continue;
-    draw_person(_npc.x, _npc.y + sin(current_time / 180 + i) * 1.5, _npc.face, _npc.kind == 2 ? make_color_rgb(85, 145, 195) : make_color_rgb(150, 91, 72));
+    var _npc_color = (_npc.kind == 2) ? make_color_rgb(85, 145, 195) : ((_npc.kind == 3 && _npc.revealed) ? make_color_rgb(155, 28, 38) : make_color_rgb(150, 91, 72));
+    draw_person(_npc.x, _npc.y + sin(current_time / 180 + i) * 1.5, _npc.face, _npc_color);
     if (point_distance(player.x, player.y, _npc.x, _npc.y) < 90) { draw_set_color(c_aqua); draw_circle(_npc.x, _npc.y - 18, 2 + sin(current_time / 100), false); }
 }
 
@@ -301,4 +303,5 @@ if (flash_on) {
 // Vinheta e lampejo dao resposta visual ao dano e a baixa sanidade.
 if (hurt_flash > 0) { draw_set_color(c_red); draw_set_alpha(hurt_flash * 0.28); fillrect(_view_x, _view_y, _view_x + vw, _view_y + vh); draw_set_alpha(1); }
 if (white_flash > 0) { draw_set_color(c_white); draw_set_alpha(white_flash * 0.45); fillrect(_view_x, _view_y, _view_x + vw, _view_y + vh); draw_set_alpha(1); }
+
 
