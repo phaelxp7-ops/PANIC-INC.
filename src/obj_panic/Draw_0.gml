@@ -55,18 +55,22 @@ if (mode == 1 && state != STATE_TITLE && state != STATE_INTRO) {
         var _turn = _en.face + sin(_en.anim * 0.05) * 3;
         var _stride = sin(_en.anim * 0.18) * (_en.mode == 1 ? 6 : 2);
         var _bob = abs(sin(_en.anim * 0.18)) * (_en.mode == 1 ? 3 : 1);
+        var _breath = 1 + sin(_en.anim * 0.075 + _type) * (_en.mode == 1 ? 0.055 : 0.025);
         var _height = en_h[_type];
         var _width = en_w[_type];
         var _skin_vb = vb_enemy_skin[_type];
         if (_type == 1) {
             // O Rastejante arrasta o tórax e abre uma mandíbula larga antes do bote.
             var _lunge = _en.mode == 1 ? 5 + abs(sin(_en.anim * 0.28)) * 7 : 0;
-            draw_textured_box3d(_skin_vb, monster_skin_tex, _en.x, _en.y, 10 + _bob, 29 + _lunge, 16, 10, _turn);
+            draw_textured_box3d(_skin_vb, monster_skin_tex, _en.x, _en.y, 10 + _bob, (29 + _lunge) * _breath, 16, 10, _turn);
             draw_textured_box3d(_skin_vb, monster_skin_tex, _en.x + lengthdir_x(17 + _lunge, _turn), _en.y + lengthdir_y(17 + _lunge, _turn), 13 + _bob, 12, 9, 8, _turn);
             var _jaw_x = _en.x + lengthdir_x(23 + _lunge, _turn);
             var _jaw_y = _en.y + lengthdir_y(23 + _lunge, _turn);
             draw_box3d(vb_mouth_dark, _jaw_x, _jaw_y, 10 + _bob, 8, 3, 5 + abs(sin(_en.anim * 0.2)) * 5, _turn);
             draw_box3d(vb_mouth_wet, _jaw_x + lengthdir_x(1, _turn), _jaw_y + lengthdir_y(1, _turn), 8 + _bob, 4.5, 1.5, 2.2, _turn);
+            for (var _tooth = -1; _tooth <= 1; _tooth++) {
+                draw_box3d(vb_claw, _jaw_x + lengthdir_x(2.5, _turn) + lengthdir_x(_tooth * 2.5, _turn + 90), _jaw_y + lengthdir_y(2.5, _turn) + lengthdir_y(_tooth * 2.5, _turn + 90), 12 + _bob, 1.0, 1.0, 3.5, _turn);
+            }
             for (var s = -1; s <= 1; s += 2) {
                 var _shoulder_x = _en.x + lengthdir_x(4, _turn) + lengthdir_x(8 * s, _turn + 90);
                 var _shoulder_y = _en.y + lengthdir_y(4, _turn) + lengthdir_y(8 * s, _turn + 90);
@@ -76,26 +80,37 @@ if (mode == 1 && state != STATE_TITLE && state != STATE_INTRO) {
                 draw_textured_box3d(_skin_vb, monster_skin_tex, _hand_x, _hand_y, 4 + _bob, 15, 3.5, 3.5, _turn + 35 * s);
                 draw_box3d(vb_claw, _hand_x + lengthdir_x(7, _turn), _hand_y + lengthdir_y(7, _turn), 3 + _bob, 2.3, 2.3, 7, _turn + 90);
                 draw_box3d(vb_claw, _hand_x + lengthdir_x(8, _turn + 90 * s), _hand_y + lengthdir_y(8, _turn + 90 * s), 3 + _bob, 1.8, 1.8, 5, _turn + 90 * s);
+                draw_box3d(vb_spike, _hand_x + lengthdir_x(11, _turn + 90 * s), _hand_y + lengthdir_y(11, _turn + 90 * s), 3 + _bob, 1.1, 1.1, 5, _turn + 90 * s);
                 // A perna traseira fica dobrada e vibra antes de cada arrancada.
                 draw_textured_box3d(_skin_vb, monster_skin_tex, _en.x - lengthdir_x(7, _turn) + lengthdir_x(7 * s, _turn + 90), _en.y - lengthdir_y(7, _turn) + lengthdir_y(7 * s, _turn + 90), 4 + _bob, 11, 5, 4.5, _turn - 28 * s);
             }
         } else {
             var _torso_w = (_type == 2) ? _width * 1.12 : _width * 1.55;
-            draw_textured_box3d(_skin_vb, monster_skin_tex, _en.x, _en.y, _height * 0.43 + _bob, _torso_w, _width * 0.9, _height * 0.82, _turn);
+            // Tórax, abdômen e ombros separados formam uma silhueta orgânica, não um bloco único.
+            draw_textured_box3d(_skin_vb, monster_skin_tex, _en.x, _en.y, _height * 0.43 + _bob, _torso_w * _breath, _width * 0.9, _height * 0.82, _turn);
+            draw_textured_box3d(_skin_vb, monster_skin_tex, _en.x - lengthdir_x(2, _turn), _en.y - lengthdir_y(2, _turn), _height * 0.25 + _bob, _torso_w * 0.72, _width * 0.82, _height * 0.40, _turn);
+            for (var _shoulder = -1; _shoulder <= 1; _shoulder += 2) {
+                var _shoulder_x = _en.x + lengthdir_x(8 * _shoulder, _turn + 90);
+                var _shoulder_y = _en.y + lengthdir_y(8 * _shoulder, _turn + 90);
+                draw_textured_box3d(_skin_vb, monster_skin_tex, _shoulder_x, _shoulder_y, _height * 0.68 + _bob, _type == 2 ? 7 : 9, 7, 8, _turn + 10 * _shoulder);
+            }
             // Cabeça alongada, boca funda e olhos recuados mudam a leitura da silhueta.
             var _head_x = _en.x + lengthdir_x(_type == 2 ? 7 : 5, _turn);
             var _head_y = _en.y + lengthdir_y(_type == 2 ? 7 : 5, _turn);
             draw_textured_box3d(_skin_vb, monster_skin_tex, _head_x, _head_y, _height * 0.84 + _bob, _type == 3 ? 9 : 10, 8, _type == 3 ? 19 : 13, _turn);
             var _face_x = _en.x + lengthdir_x(_type == 2 ? 12 : 11, _turn);
             var _face_y = _en.y + lengthdir_y(_type == 2 ? 12 : 11, _turn);
-            var _eye_glow = 0.8 + 0.28 * sin(_en.anim * 0.32);
+            var _eye_glow = 0.42 + 0.16 * sin(_en.anim * 0.32);
             draw_box3d(vb_mouth_dark, _face_x + lengthdir_x(1.8, _turn), _face_y + lengthdir_y(1.8, _turn), _height * 0.76 + _bob, _type == 2 ? 3 : 4, 2.3, _type == 2 ? 7 : 8, _turn);
             draw_box3d(vb_mouth_wet, _face_x + lengthdir_x(2.6, _turn), _face_y + lengthdir_y(2.6, _turn), _height * 0.73 + _bob, 1.2, 1.1, 3.2, _turn);
             for (var _eye_side = -1; _eye_side <= 1; _eye_side += 2) {
                 var _socket_x = _face_x + lengthdir_x(3.1 * _eye_side, _turn + 90);
                 var _socket_y = _face_y + lengthdir_y(3.1 * _eye_side, _turn + 90);
                 draw_box3d(vb_eyedark, _socket_x, _socket_y, _height * 0.88 + _bob, 3.4, 2.2, 2.6, _turn);
-                if (_type != 2 || flash_on) draw_box3d(vb_core, _socket_x + lengthdir_x(1.0, _turn), _socket_y + lengthdir_y(1.0, _turn), _height * 0.88 + _bob, 1.15 * _eye_glow, 1.0, 1.25 * _eye_glow, _turn);
+                if (_type != 2 || flash_on) {
+                    var _eye_reveal = (flash_on || _en.mode == 1) ? 1.0 : 0.34;
+                    draw_box3d(vb_core, _socket_x + lengthdir_x(1.0, _turn), _socket_y + lengthdir_y(1.0, _turn), _height * 0.88 + _bob, 1.0 * _eye_glow * _eye_reveal, 0.8, 1.1 * _eye_glow * _eye_reveal, _turn);
+                }
             }
             for (var s = -1; s <= 1; s += 2) {
                 var _sx = _en.x + lengthdir_x(7 * s, _turn + 90);
@@ -103,20 +118,30 @@ if (mode == 1 && state != STATE_TITLE && state != STATE_INTRO) {
                 var _arm_x = _sx + lengthdir_x(_stride, _turn);
                 var _arm_y = _sy + lengthdir_y(_stride, _turn);
                 draw_textured_box3d(_skin_vb, monster_skin_tex, _arm_x, _arm_y, _height * 0.48 + _bob, _type == 2 ? 5 : 6, 5, _height * 0.58, _turn + 12 * s);
+                draw_textured_box3d(_skin_vb, monster_skin_tex, _arm_x + lengthdir_x(4 * s, _turn + 90), _arm_y + lengthdir_y(4 * s, _turn + 90), _height * 0.29 + _bob + _stride * 0.2, 3.8, 3.9, _height * 0.30, _turn + 18 * s);
                 draw_textured_box3d(_skin_vb, monster_skin_tex, _en.x + lengthdir_x(5 * s, _turn + 90), _en.y + lengthdir_y(5 * s, _turn + 90), _height * 0.16 + _bob, 6.5, 6.5, _height * 0.35, _turn - _stride * s);
                 draw_box3d(vb_claw, _arm_x + lengthdir_x(8, _turn), _arm_y + lengthdir_y(8, _turn), _height * 0.21 + _bob + _stride * 0.2, 2.2, 2.2, 8, _turn + 90 * s);
+                for (var _finger = -1; _finger <= 1; _finger++) {
+                    var _fx = _arm_x + lengthdir_x(10, _turn) + lengthdir_x(_finger * 2.1, _turn + 90);
+                    var _fy = _arm_y + lengthdir_y(10, _turn) + lengthdir_y(_finger * 2.1, _turn + 90);
+                    draw_box3d(vb_spike, _fx, _fy, _height * 0.16 + _bob, 0.9, 0.9, 5.5, _turn + 90 * s + _finger * 8);
+                }
             }
             if (_type == 0) {
                 // Costelas escuras atravessam a pele ressecada do Esvaziado.
-                for (var _rib = 0; _rib < 3; _rib++) {
-                    draw_box3d(vb_eyedark, _en.x + lengthdir_x(7.5, _turn), _en.y + lengthdir_y(7.5, _turn), _height * 0.42 + _rib * 4 + _bob, 8, 2.4, 1.5, _turn);
+                for (var _rib = 0; _rib < 4; _rib++) {
+                    draw_box3d(vb_eyedark, _en.x + lengthdir_x(7.8, _turn), _en.y + lengthdir_y(7.8, _turn), _height * 0.35 + _rib * 3.4 + _bob, 8, 2.0, 1.3, _turn);
                 }
+                draw_box3d(vb_mouth_dark, _face_x + lengthdir_x(3.0, _turn), _face_y + lengthdir_y(3.0, _turn), _height * 0.70 + _bob, 4.0, 1.7, 5.8, _turn);
+                for (var _fang = -1; _fang <= 1; _fang += 2) draw_box3d(vb_claw, _face_x + lengthdir_x(5, _turn) + lengthdir_x(2.0 * _fang, _turn + 90), _face_y + lengthdir_y(5, _turn) + lengthdir_y(2.0 * _fang, _turn + 90), _height * 0.69 + _bob, 1.0, 1.0, 3.6, _turn);
             }
             if (_type == 2) {
                 // A Estátua é alta, sem expressão, e dobra os braços como galhos quebrados.
                 for (var _horn = -1; _horn <= 1; _horn += 2) {
                     draw_box3d(vb_spike, _head_x + lengthdir_x(3.8 * _horn, _turn + 90), _head_y + lengthdir_y(3.8 * _horn, _turn + 90), _height + 8 + _bob, 3.6, 3.6, 16, _turn + 20 * _horn);
                 }
+                draw_box3d(vb_eyedark, _face_x + lengthdir_x(1, _turn), _face_y + lengthdir_y(1, _turn), _height * 0.88 + _bob, 5.5, 2.5, 2.0, _turn);
+                draw_box3d(vb_spike, _head_x + lengthdir_x(3, _turn + 90), _head_y + lengthdir_y(3, _turn + 90), _height + 2 + _bob, 1.0, 1.0, 12, _turn + 8);
             }
             if (_type == 3) {
                 draw_box3d(vb_spike, _en.x - lengthdir_x(5, _turn + 90), _en.y - lengthdir_y(5, _turn + 90), _height + 12 + _bob, 6, 6, 22, _turn - 18);
@@ -193,11 +218,23 @@ if (mode == 1 && state != STATE_TITLE && state != STATE_INTRO) {
     // O Diretor usa a pele mais escura do atlas, com veios e núcleo pulsante.
     if (boss != -1) {
         var _pulse = 1 + 0.06 * sin(boss.anim * 0.12);
-        draw_textured_box3d(vb_enemy_skin[3], monster_skin_tex, boss.x, boss.y, 36, 58 * _pulse, 52 * _pulse, 70 * _pulse, boss.face);
-        draw_box3d(vb_core, boss.x + lengthdir_x(25, boss.face), boss.y + lengthdir_y(25, boss.face), 40, 15, 10, 20, current_time * 0.08);
-        for (var s = -1; s <= 1; s++) {
-            draw_box3d(vb_spike, boss.x + lengthdir_x(12 * s, boss.face + 90), boss.y + lengthdir_y(12 * s, boss.face + 90), 78, 13, 13, 36, boss.face + 15 * s);
+        var _boss_sway = sin(boss.anim * 0.08) * 3;
+        var _boss_fx = lengthdir_x(1, boss.face); var _boss_fy = lengthdir_y(1, boss.face);
+        var _boss_rx = lengthdir_x(1, boss.face + 90); var _boss_ry = lengthdir_y(1, boss.face + 90);
+        // Silhueta assimétrica: caixa torácica, cabeça afundada e braços quase no chão.
+        draw_textured_box3d(vb_enemy_skin[3], monster_skin_tex, boss.x, boss.y, 37, 52 * _pulse, 42, 68 * _pulse, boss.face);
+        draw_textured_box3d(vb_enemy_skin[3], monster_skin_tex, boss.x + _boss_fx * 3, boss.y + _boss_fy * 3, 83 + _boss_sway, 28, 27, 31, boss.face);
+        for (var s = -1; s <= 1; s += 2) {
+            var _bsx = boss.x + _boss_rx * 24 * s;
+            var _bsy = boss.y + _boss_ry * 24 * s;
+            var _arm_sway = sin(boss.anim * 0.11 + s) * 7;
+            draw_textured_box3d(vb_enemy_skin[3], monster_skin_tex, _bsx, _bsy, 63 + _boss_sway, 21, 20, 32, boss.face + s * 10);
+            draw_textured_box3d(vb_enemy_skin[3], monster_skin_tex, _bsx + _boss_fx * (13 + _arm_sway), _bsy + _boss_fy * (13 + _arm_sway), 37, 15, 15, 37, boss.face + s * 18);
+            draw_box3d(vb_claw, _bsx + _boss_fx * 27 + _boss_rx * s * 2, _bsy + _boss_fy * 27 + _boss_ry * s * 2, 17, 5, 5, 15, boss.face + 90 * s);
+            draw_box3d(vb_spike, _bsx - _boss_fx * 5 + _boss_rx * s * 7, _bsy - _boss_fy * 5 + _boss_ry * s * 7, 94 + _boss_sway, 8, 8, 28 + 3 * sin(boss.anim * 0.1 + s), boss.face + s * 12);
         }
+        draw_box3d(vb_core, boss.x + _boss_fx * 30, boss.y + _boss_fy * 30, 49 + _boss_sway, 14 * _pulse, 10, 18 * _pulse, current_time * 0.08);
+        for (var _rib = -2; _rib <= 2; _rib++) draw_box3d(vb_eyedark, boss.x + _boss_fx * 19 + _boss_rx * _rib * 6, boss.y + _boss_fy * 19 + _boss_ry * _rib * 6, 40 + abs(_rib) * 4, 3, 2, 18, boss.face);
     }
 
     // Tiros do chefe e brilho visivel mesmo atraves da nevoa.
@@ -364,7 +401,7 @@ for (var i = 0; i < array_length(enemies); i++) {
     var _ec = (_en.type == 0) ? make_color_rgb(100, 110, 128) : ((_en.type == 1) ? make_color_rgb(130, 45, 34) : ((_en.type == 2) ? make_color_rgb(205, 211, 225) : make_color_rgb(68, 26, 77)));
     var _pulse = _en.mode == 1 ? 1 : 0.74;
     draw_set_alpha(_pulse);
-    draw_husk(_en.x, _en.y, _en.face, _ec, _en.mode == 1, _en.anim, 1);
+    draw_husk(_en.x, _en.y, _en.face, _ec, _en.mode == 1, _en.anim, 1, _en.type);
     draw_set_alpha(1);
     if (_en.mode == 1) {
         draw_set_color(make_color_rgb(255, 30, 22));
@@ -376,7 +413,7 @@ for (var i = 0; i < array_length(hallu); i++) {
     var _ha = hallu[i]; var _hx = floor(_ha.x / tile); var _hy = floor(_ha.y / tile);
     if (_hx < 0 || _hy < 0 || _hx >= cols || _hy >= rows || !vis[_hx][_hy]) continue;
     draw_set_alpha(clamp(_ha.life / 55, 0, 0.72));
-    draw_husk(_ha.x, _ha.y, _ha.face, make_color_rgb(202, 202, 220), false, _ha.anim, 0.7);
+    draw_husk(_ha.x, _ha.y, _ha.face, make_color_rgb(202, 202, 220), false, _ha.anim, 0.7, 3);
     draw_set_alpha(1);
 }
 

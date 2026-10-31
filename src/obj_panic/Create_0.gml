@@ -149,8 +149,10 @@ fillrect = function(_x1, _y1, _x2, _y2) {
 
 gtext = function(_x, _y, _str, _sc, _col) {
     draw_set_alpha(1);
+    // Sombra proporcional: offsets fixos faziam fontes pequenas parecerem texto duplicado.
+    var _shadow = max(1, round(_sc * 0.55));
     draw_set_color(c_black);
-    draw_text_transformed(_x + 2, _y + 2, _str, _sc, _sc, 0);
+    draw_text_transformed(_x + _shadow, _y + _shadow, _str, _sc, _sc, 0);
     draw_set_color(_col);
     draw_text_transformed(_x, _y, _str, _sc, _sc, 0);
 };
@@ -7118,8 +7120,8 @@ make_sphere = function(_c) {
     var _vb = vertex_create_buffer();
     vertex_begin(_vb, vf);
     // Malha mais densa reduz o aspecto facetado em monstros e objetos 3D.
-    var _rings = 10;
-    var _sides = 16;
+    var _rings = 14;
+    var _sides = 22;
     for (var _lat = 0; _lat < _rings; _lat++) {
         var _a0 = -90 + 180 * _lat / _rings;
         var _a1 = -90 + 180 * (_lat + 1) / _rings;
@@ -7185,7 +7187,7 @@ make_textured_sphere_region = function(_spr, _cell_x, _cell_y, _grid) {
     var _u1 = lerp(_uv[0], _uv[2], ((_cell_x + 1) * _cell_w - _pad) / _sw);
     var _v0 = lerp(_uv[1], _uv[3], (_cell_y * _cell_h + _pad) / _sh);
     var _v1 = lerp(_uv[1], _uv[3], ((_cell_y + 1) * _cell_h - _pad) / _sh);
-    var _rings = 18; var _sides = 28;
+    var _rings = 24; var _sides = 36;
     vertex_begin(_vb, vf);
     for (var _lat = 0; _lat < _rings; _lat++) {
         var _a0 = -90 + 180 * _lat / _rings; var _a1 = -90 + 180 * (_lat + 1) / _rings;
@@ -7197,7 +7199,11 @@ make_textured_sphere_region = function(_spr, _cell_x, _cell_y, _grid) {
             var _x11 = dcos(_a1) * dcos(_b1); var _y11 = dcos(_a1) * dsin(_b1); var _z11 = dsin(_a1);
             var _tu0 = lerp(_u0, _u1, _lon / _sides); var _tu1 = lerp(_u0, _u1, (_lon + 1) / _sides);
             var _tv0 = lerp(_v0, _v1, 1 - _lat / _rings); var _tv1 = lerp(_v0, _v1, 1 - (_lat + 1) / _rings);
-            var _light = 0.68 + 0.36 * max(0, dsin((_a0 + _a1) * 0.5));
+            // Luz hemisferica por vertice: da volume a pele sem shader caro.
+            var _nx = (_x00 + _x10 + _x11 + _x01) * 0.25;
+            var _ny = (_y00 + _y10 + _y11 + _y01) * 0.25;
+            var _nz = (_z00 + _z10 + _z11 + _z01) * 0.25;
+            var _light = clamp(0.34 + max(0, _nz) * 0.38 + max(0, _ny) * 0.24 + max(0, -_nx) * 0.08, 0.24, 1.0);
             var _lit = make_color_rgb(255 * _light, 255 * _light, 255 * _light);
             vtv(_vb,_x00,_y00,_z00,_tu0,_tv0,_lit); vtv(_vb,_x10,_y10,_z10,_tu1,_tv0,_lit); vtv(_vb,_x11,_y11,_z11,_tu1,_tv1,_lit);
             vtv(_vb,_x00,_y00,_z00,_tu0,_tv0,_lit); vtv(_vb,_x11,_y11,_z11,_tu1,_tv1,_lit); vtv(_vb,_x01,_y01,_z01,_tu0,_tv1,_lit);
@@ -7922,35 +7928,73 @@ update_boss = function() {
 // ============================================================
 // DESENHO REUTILIZAVEL
 // ============================================================
-draw_husk = function(_x, _y, _face, _col, _chase, _anim, _a) {
+draw_husk = function(_x, _y, _face, _col, _chase, _anim, _a, _type) {
     draw_set_alpha(_a);
-    var _tw = sin(_anim * 0.2) * (_chase ? 2.2 : 1);
-    var _reach = _chase ? 21 : 11;
-    for (var s = -1; s <= 1; s += 2) {
-        var _sx = _x + lengthdir_x(8 * s, _face + 90);
-        var _sy = _y + lengthdir_y(8 * s, _face + 90);
-        var _ang = _face + _tw * 3 * s;
-        var _ex = _sx + lengthdir_x(_reach, _ang);
-        var _ey = _sy + lengthdir_y(_reach, _ang);
-        draw_set_color(shade(_col, 0.55));
-        draw_line_width(_sx, _sy, _ex, _ey, 3);
-        for (var cl = -1; cl <= 1; cl++) {
-            draw_line_width(_ex, _ey, _ex + lengthdir_x(6, _ang + cl * 28), _ey + lengthdir_y(6, _ang + cl * 28), 1);
+    var _kind = clamp(_type, 0, 3);
+    var _tw = sin(_anim * 0.2) * (_chase ? 3.2 : 1.2);
+    var _pulse = 1 + 0.06 * sin(_anim * 0.14);
+    var _reach = _chase ? 25 : 13;
+    draw_set_alpha(_a * 0.35);
+    draw_set_color(c_black); draw_ellipse(_x - 15, _y + 6, _x + 15, _y + 13, false);
+    draw_set_alpha(_a);
+
+    // Cada familia tem uma silhueta 2D propria em vez do mesmo boneco circular.
+    if (_kind == 1) {
+        // Rastejante: corpo baixo, mandibula aberta e bracos que se arrastam.
+        draw_set_color(shade(_col, 0.58)); draw_ellipse(_x - 15, _y - 5, _x + 15, _y + 8, false);
+        draw_set_color(_col); draw_ellipse(_x + lengthdir_x(10, _face) - 7, _y + lengthdir_y(10, _face) - 5, _x + lengthdir_x(10, _face) + 7, _y + lengthdir_y(10, _face) + 5, false);
+        var _mx = _x + lengthdir_x(17, _face); var _my = _y + lengthdir_y(17, _face);
+        draw_set_color(make_color_rgb(13, 3, 7)); draw_ellipse(_mx - 6, _my - 4, _mx + 6, _my + 4 + (_chase ? abs(sin(_anim * 0.3)) * 5 : 1), false);
+        draw_set_color(make_color_rgb(190, 175, 153));
+        for (var _tooth = -1; _tooth <= 1; _tooth++) draw_triangle(_mx + _tooth * 3 - 1, _my - 1, _mx + _tooth * 3 + 1, _my - 1, _mx + _tooth * 3, _my + 3, false);
+        for (var s = -1; s <= 1; s += 2) {
+            var _sx = _x + lengthdir_x(2, _face + 90) * s; var _sy = _y + lengthdir_y(2, _face + 90) * s;
+            var _ex = _sx + lengthdir_x(_reach + 8, _face + _tw * s); var _ey = _sy + lengthdir_y(_reach + 8, _face + _tw * s);
+            draw_set_color(shade(_col, 0.5)); draw_line_width(_sx, _sy, _ex, _ey, 3);
+            for (var _cl = -1; _cl <= 1; _cl++) draw_line_width(_ex, _ey, _ex + lengthdir_x(7, _face + _tw * s + _cl * 25), _ey + lengthdir_y(7, _face + _tw * s + _cl * 25), 1.4);
         }
-        draw_set_color(_col);
-        draw_circle(_sx, _sy, 4, false);
+    } else {
+        var _body_w = (_kind == 2) ? 9 : ((_kind == 3) ? 10 : 8);
+        var _body_h = (_kind == 2) ? 29 : ((_kind == 3) ? 25 : 22);
+        draw_set_color(shade(_col, 0.45)); draw_ellipse(_x - _body_w, _y - _body_h * 0.38, _x + _body_w, _y + _body_h * 0.58, false);
+        draw_set_color(_col); draw_ellipse(_x - _body_w * 0.72 * _pulse, _y - _body_h * 0.42, _x + _body_w * 0.72 * _pulse, _y + _body_h * 0.48, false);
+        var _hx = _x + lengthdir_x(_kind == 3 ? 7 : 5, _face);
+        var _hy = _y + lengthdir_y(_kind == 3 ? 7 : 5, _face);
+        var _head_r = (_kind == 2) ? 7 : 6;
+        draw_set_color(shade(_col, 0.72)); draw_ellipse(_hx - _head_r, _hy - _head_r, _hx + _head_r, _hy + _head_r, false);
+        draw_set_color(_kind == 2 ? make_color_rgb(27, 25, 28) : make_color_rgb(11, 3, 7));
+        draw_ellipse(_hx + lengthdir_x(2.8, _face) - 3.3, _hy + lengthdir_y(2.8, _face) - 2.3, _hx + lengthdir_x(2.8, _face) - 0.2, _hy + lengthdir_y(2.8, _face) + 1.5, false);
+        draw_ellipse(_hx + lengthdir_x(2.8, _face) + 0.2, _hy + lengthdir_y(2.8, _face) - 2.3, _hx + lengthdir_x(2.8, _face) + 3.3, _hy + lengthdir_y(2.8, _face) + 1.5, false);
+        draw_set_color(make_color_rgb(255, 38, 25));
+        if (_chase || _kind == 3) {
+            draw_circle(_hx + lengthdir_x(3.0, _face) + lengthdir_x(1.6, _face + 90), _hy + lengthdir_y(3.0, _face) + lengthdir_y(1.6, _face + 90), 1.25, false);
+            draw_circle(_hx + lengthdir_x(3.0, _face) - lengthdir_x(1.6, _face + 90), _hy + lengthdir_y(3.0, _face) - lengthdir_y(1.6, _face + 90), 1.25, false);
+        }
+        for (var s = -1; s <= 1; s += 2) {
+            var _sx = _x + lengthdir_x(5 * s, _face + 90);
+            var _sy = _y + lengthdir_y(5 * s, _face + 90);
+            var _ang = _face + _tw * 2.5 * s;
+            var _ex = _sx + lengthdir_x(_reach, _ang);
+            var _ey = _sy + lengthdir_y(_reach, _ang);
+            draw_set_color(shade(_col, 0.55)); draw_line_width(_sx, _sy, _ex, _ey, _kind == 2 ? 4 : 3);
+            draw_set_color(_col); draw_circle(_sx, _sy, 3.5, false);
+            for (var _cl = -1; _cl <= 1; _cl++) draw_line_width(_ex, _ey, _ex + lengthdir_x(7, _ang + _cl * 28), _ey + lengthdir_y(7, _ang + _cl * 28), 1.3);
+        }
+        if (_kind == 0) {
+            draw_set_color(make_color_rgb(28, 18, 19));
+            for (var _rib = -1; _rib <= 1; _rib++) draw_line_width(_x - 6, _y + _rib * 4, _x + 6, _y + _rib * 4 + 1, 1.4);
+        } else if (_kind == 2) {
+            draw_set_color(make_color_rgb(47, 46, 48));
+            draw_line_width(_hx - 3, _hy - 3, _hx, _hy + 3, 1);
+            draw_line_width(_hx, _hy + 3, _hx + 3, _hy + 1, 1);
+        } else if (_kind == 3) {
+            draw_set_color(make_color_rgb(24, 6, 32));
+            for (var _sp = 0; _sp < 4; _sp++) {
+                var _spx = _x - lengthdir_x(5 + _sp * 3, _face); var _spy = _y - lengthdir_y(5 + _sp * 3, _face);
+                draw_triangle(_spx - 4, _spy, _spx + 4, _spy, _spx, _spy - 12 + _sp * 1.5, false);
+            }
+        }
     }
-    draw_set_color(_col);
-    draw_circle(_x, _y, 9, false);
-    var _hx = _x + lengthdir_x(5, _face);
-    var _hy = _y + lengthdir_y(5, _face);
-    draw_set_color(shade(_col, 1.2));
-    draw_circle(_hx, _hy, 6, false);
-    draw_set_color(c_black);
-    for (var s = -1; s <= 1; s += 2) {
-        draw_circle(_hx + lengthdir_x(2, _face) + lengthdir_x(2.6 * s, _face + 90), _hy + lengthdir_y(2, _face) + lengthdir_y(2.6 * s, _face + 90), 1.8, false);
-    }
-    if (_chase) draw_circle(_hx + lengthdir_x(4, _face), _hy + lengthdir_y(4, _face), 2.2, false);
     draw_set_alpha(1);
 };
 
