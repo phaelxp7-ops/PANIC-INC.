@@ -373,7 +373,9 @@ for (var i = 0; i < array_length(items); i++) {
     }
 }
 
+var _picked_this_frame = false;
 if (nearby_item != -1 && keyboard_check_pressed(ord("E"))) {
+    _picked_this_frame = true;
     var _it = items[nearby_item];
     var _pcol = c_yellow;
     switch (_it.type) {
@@ -444,7 +446,7 @@ if (exit_open) {
     var _exx = exit_c * tile + tile / 2;
     var _exy = exit_r * tile + tile / 2;
     // Extrair agora e uma escolha: o jogador pode continuar explorando e saqueando.
-    if (point_distance(player.x, player.y, _exx, _exy) < 34 && nearby_item == -1
+    if (point_distance(player.x, player.y, _exx, _exy) < 34 && nearby_item == -1 && !_picked_this_frame
         && keyboard_check_pressed(ord("E"))) {
         last_bonus = max(0, 500 - floor(level_time / 60) * 4);
         pontos += 250 + last_bonus;
