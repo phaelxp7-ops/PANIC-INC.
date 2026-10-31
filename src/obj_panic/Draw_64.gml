@@ -40,11 +40,12 @@ if (state == STATE_TITLE) {
     draw_roundrect(gw * 0.12, 205, gw * 0.88, 520, false);
     draw_set_color(make_color_rgb(65, 76, 96));
     draw_roundrect(gw * 0.12, 205, gw * 0.88, 520, true);
-    gtext(gw / 2, 226, "RECUPERE OS ARQUIVOS. NAO DEIXE A EQUIPE PARA TRAS.", 1.35, c_white);
+    gtext(gw / 2, 226, "CADA CONTRATO MUDA: ARQUIVOS, GERADORES OU ANOMALIAS.", 1.35, c_white);
     gtext(gw / 2, 286, "WASD: explorar     SHIFT: correr     MOUSE: olhar para os lados e para cima/baixo", 1.1, c_ltgray);
     gtext(gw / 2, 322, "E: coletar     F: lanterna     Q: sinalizador (atordoa monstros)", 1.1, c_aqua);
     gtext(gw / 2, 358, "TAB: alternar 2D/3D     M: som     ESC: pausar", 1.1, c_ltgray);
-    gtext(gw / 2, 414, "Correr faz barulho. A luz segura o perseguidor palido.", 1.05, c_orange);
+    gtext(gw / 2, 398, "Salas podem ter emboscadas, apagao, caches ou apenas silencio.", 1.05, c_orange);
+    gtext(gw / 2, 426, "O VIGIA aprende sua rota. A lanterna nao o detem.", 1.05, c_red);
     gtext(gw / 2, 570, "[ ENTER ]  INICIAR TURNO", 2.0 + sin(current_time / 200) * 0.12, c_yellow);
     if (best_pontos > 0) gtext(gw / 2, 630, "RECORDE: " + string(best_pontos) + "   |   MELHOR FASE: " + string(best_level), 1.2, c_aqua);
     draw_set_halign(fa_left);
@@ -80,6 +81,26 @@ if (alarm_on) {
 }
 draw_set_alpha(1);
 
+// Aparicao curta do Vigia: rosto no centro, som e camera shake fazem o susto ter leitura clara.
+if (jumpscare > 0) {
+    var _ja = clamp(jumpscare / 18, 0, 1);
+    draw_set_color(c_maroon);
+    draw_set_alpha(_ja * 0.28);
+    fillrect(0, 0, gw, gh);
+    draw_set_color(c_black);
+    draw_set_alpha(_ja);
+    draw_ellipse(gw * 0.5 - 175, gh * 0.5 - 205, gw * 0.5 + 175, gh * 0.5 + 210, false);
+    draw_set_color(c_red);
+    draw_ellipse(gw * 0.5 - 105, gh * 0.5 - 65, gw * 0.5 - 28, gh * 0.5 - 25, false);
+    draw_ellipse(gw * 0.5 + 28, gh * 0.5 - 65, gw * 0.5 + 105, gh * 0.5 - 25, false);
+    draw_set_color(c_white);
+    draw_ellipse(gw * 0.5 - 78, gh * 0.5 - 58, gw * 0.5 - 48, gh * 0.5 - 32, false);
+    draw_ellipse(gw * 0.5 + 48, gh * 0.5 - 58, gw * 0.5 + 78, gh * 0.5 - 32, false);
+    draw_set_color(c_black);
+    draw_triangle(gw * 0.5 - 72, gh * 0.5 + 45, gw * 0.5 + 72, gh * 0.5 + 45, gw * 0.5, gh * 0.5 + 150, false);
+    draw_set_alpha(1);
+}
+
 // ---------- BARRAS ----------
 var _bw = 260;
 draw_set_color(c_black);
@@ -101,7 +122,7 @@ draw_text(24 + _bw + 10, 24, "VIDA " + string(ceil(player.hp)));
 draw_text(24 + _bw + 10, 48, "STAMINA");
 draw_text(24 + _bw + 10, 68, "BATERIA " + (flash_on ? "(ON)" : "(OFF)"));
 
-gtext(24, 96, "DOCUMENTOS: " + string(docs_got) + " / " + string(docs_total), 1.4, c_yellow);
+gtext(24, 96, objective_names[mission_type] + ": " + string(docs_got) + " / " + string(docs_total), 1.25, c_yellow);
 gtext(24, 124, "PONTOS: " + string(pontos), 1.2, c_white);
 gtext(24, 198, "SINALIZADORES [Q]: " + string(flare_charges), 1.05, c_aqua);
 gtext(24, 222, "NIVEL DE CAMPO " + string(player.rank) + "  XP " + string(player.xp) + "/" + string(player.xp_next), 1.0, c_aqua);
@@ -145,7 +166,8 @@ if (explored[exit_c][exit_r]) {
 draw_set_color(c_yellow);
 for (var i = 0; i < array_length(items); i++) {
     var _mi = items[i];
-    if (_mi.type == 0 && explored[floor(_mi.x / tile)][floor(_mi.y / tile)]) {
+    if (_mi.type == ((mission_type == 0) ? 0 : ((mission_type == 1) ? 3 : 4))
+        && explored[floor(_mi.x / tile)][floor(_mi.y / tile)]) {
         fillrect(_mmx + _mi.x / tile * _ms - 1, _mmy + _mi.y / tile * _ms - 1,
                  _mmx + _mi.x / tile * _ms + 2, _mmy + _mi.y / tile * _ms + 2);
     }
@@ -194,7 +216,7 @@ if (nearby_item != -1) {
     gtext(gw / 2, gh - 130, "[E] Pegar " + item_names[items[nearby_item].type], 1.6, c_yellow);
 }
 if (!exit_open && point_distance(player.x, player.y, exit_c * tile + 16, exit_r * tile + 16) < 60) {
-    gtext(gw / 2, gh - 100, "SAIDA TRANCADA - colete todos os documentos", 1.3, c_orange);
+    gtext(gw / 2, gh - 100, "SAIDA TRANCADA - conclua: " + objective_names[mission_type], 1.3, c_orange);
 }
 else if (exit_open && point_distance(player.x, player.y, exit_c * tile + 16, exit_r * tile + 16) < 60) {
     gtext(gw / 2, gh - 100, "[E] EXTRAIR   |   voce pode explorar antes de sair", 1.3, c_lime);
