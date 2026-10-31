@@ -46,6 +46,7 @@ if (state == STATE_TITLE) {
     gtext(gw / 2, 358, "TAB: alternar 2D/3D     M: som     ESC: pausar", 1.1, c_ltgray);
     gtext(gw / 2, 398, "Salas podem ter emboscadas, apagao, caches ou apenas silencio.", 1.05, c_orange);
     gtext(gw / 2, 426, "O VIGIA aprende sua rota. A lanterna nao o detem.", 1.05, c_red);
+    gtext(gw / 2, 454, "Nem todo sobrevivente quer ajudar. Pense antes de confiar.", 1.05, c_aqua);
     gtext(gw / 2, 570, "[ ENTER ]  INICIAR TURNO", 2.0 + sin(current_time / 200) * 0.12, c_yellow);
     if (best_pontos > 0) gtext(gw / 2, 630, "RECORDE: " + string(best_pontos) + "   |   MELHOR FASE: " + string(best_level), 1.2, c_aqua);
     draw_set_halign(fa_left);
@@ -98,6 +99,18 @@ if (jumpscare > 0) {
     draw_ellipse(gw * 0.5 + 48, gh * 0.5 - 58, gw * 0.5 + 78, gh * 0.5 - 32, false);
     draw_set_color(c_black);
     draw_triangle(gw * 0.5 - 72, gh * 0.5 + 45, gw * 0.5 + 72, gh * 0.5 + 45, gw * 0.5, gh * 0.5 + 150, false);
+    draw_set_alpha(1);
+}
+if (contract_flash > 0) {
+    var _cf = contract_flash / 55;
+    var _ring = (1 - _cf) * 250;
+    gpu_set_blendmode(bm_add);
+    draw_set_color(c_aqua);
+    draw_set_alpha(_cf * 0.8);
+    draw_circle(gw * 0.5, gh * 0.5, 48 + _ring, true);
+    draw_circle(gw * 0.5, gh * 0.5, 55 + _ring, true);
+    gtext(gw / 2, gh * 0.33, "CONTRATO CONCLUIDO", 2.2, c_aqua);
+    gpu_set_blendmode(bm_normal);
     draw_set_alpha(1);
 }
 
@@ -214,6 +227,9 @@ if (mode == 1) {
 // ---------- DICAS ----------
 if (nearby_item != -1) {
     gtext(gw / 2, gh - 130, "[E] Pegar " + item_names[items[nearby_item].type], 1.6, c_yellow);
+}
+else if (nearby_npc != -1) {
+    gtext(gw / 2, gh - 130, "[E] Falar com sobrevivente", 1.5, c_aqua);
 }
 if (!exit_open && point_distance(player.x, player.y, exit_c * tile + 16, exit_r * tile + 16) < 60) {
     gtext(gw / 2, gh - 100, "SAIDA TRANCADA - conclua: " + objective_names[mission_type], 1.3, c_orange);
