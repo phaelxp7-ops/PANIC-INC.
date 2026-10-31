@@ -364,10 +364,12 @@ spawn_enemy = function(_mind) {
     var _type = 0;
     if (level >= 2 && _r < 0.25) _type = 1;
     else if (level >= 3 && _r > 0.78) _type = 2;
-    // Mantem a ameaca legivel e evita que o escalonamento vire uma corrida impossivel.
-    var _spd = min(1.38, 0.78 + level * 0.045) + random_range(-0.07, 0.07);
-    if (_type == 1) _spd *= 1.45;
-    if (_type == 2) _spd *= 1.2;
+    // A partir da fase 4, perseguidores aceleram e variantes aparecem com mais frequencia.
+    if (level >= 4 && _r < min(0.44, 0.25 + (level - 3) * 0.025)) _type = 1;
+    else if (level >= 5 && _r > max(0.58, 0.78 - (level - 4) * 0.025)) _type = 2;
+    var _spd = min(1.85, 0.78 + level * 0.075) + random_range(-0.06, 0.06);
+    if (_type == 1) _spd *= 1.32;
+    if (_type == 2) _spd *= 1.14;
     array_push(enemies, {
         x : _p.x, y : _p.y, spd : _spd, type : _type,
         face : random(360), anim : random(360), lit : false,
@@ -485,6 +487,19 @@ wall_face = function(_ax, _ay, _bx, _by, _k) {
     vquad(vb_world, _ax,_ay,0,   _bx,_by,0,   _bx,_by,14,      _ax,_ay,14,      shade(_base, _k * 0.55));
     vquad(vb_world, _ax,_ay,14,  _bx,_by,14,  _bx,_by,_hh-6,   _ax,_ay,_hh-6,   shade(_base, _k));
     vquad(vb_world, _ax,_ay,_hh-6, _bx,_by,_hh-6, _bx,_by,_hh, _ax,_ay,_hh,     shade(make_color_rgb(200, 60, 50), _k * 0.8));
+    // Painel metalico fino: quebra a repeticao das paredes sem exigir sprites externos.
+    var _len = point_distance(_ax, _ay, _bx, _by);
+    if (_len > 30) {
+        var _mx = (_ax + _bx) * 0.5;
+        var _my = (_ay + _by) * 0.5;
+        var _dx = (_bx - _ax) / _len;
+        var _dy = (_by - _ay) / _len;
+        var _px = -_dy * 1.2;
+        var _py = _dx * 1.2;
+        vquad(vb_world, _mx-_dx*7-_px,_my-_dy*7-_py,20, _mx+_dx*7-_px,_my+_dy*7-_py,20,
+              _mx+_dx*7-_px,_my+_dy*7-_py,wall_h-12, _mx-_dx*7-_px,_my-_dy*7-_py,wall_h-12,
+              shade(make_color_rgb(125, 135, 150), _k * 0.72));
+    }
 };
 
 build_3d = function() {
@@ -500,6 +515,15 @@ build_3d = function() {
                 var _chk = (((c + r) mod 2) == 0) ? 1.0 : 0.88;
                 var _fc = shade(make_color_rgb(95, 95, 110), _k * _chk);
                 vquad(vb_world, _x1,_y1,0, _x2,_y1,0, _x2,_y2,0, _x1,_y2,0, _fc);
+                // Faixas de piso e grelhas de drenagem para dar escala e leitura ao corredor.
+                if (((c * 13 + r * 7) mod 9) == 0) {
+                    var _gc = shade(make_color_rgb(55, 62, 72), _k);
+                    vquad(vb_world, _x1+5,_y1+7,0.35, _x1+tile-5,_y1+7,0.35, _x1+tile-5,_y1+9,0.35, _x1+5,_y1+9,0.35, _gc);
+                    vquad(vb_world, _x1+5,_y1+23,0.35, _x1+tile-5,_y1+23,0.35, _x1+tile-5,_y1+25,0.35, _x1+5,_y1+25,0.35, _gc);
+                } else if (((c * 5 + r * 11) mod 17) == 0) {
+                    var _stain = shade(make_color_rgb(72, 27, 31), _k * 0.72);
+                    vquad(_x1+8,_y1+15,0.25, _x1+18,_y1+13,0.25, _x1+22,_y1+18,0.25, _x1+10,_y1+20,0.25, _stain);
+                }
                 vquad(vb_world, _x1,_y1,wall_h, _x2,_y1,wall_h, _x2,_y2,wall_h, _x1,_y2,wall_h, make_color_rgb(40, 40, 52));
             } else {
                 if (r > 0 && grid[c][r - 1] == 0)           wall_face(_x1, _y1, _x2, _y1, 0.95);
@@ -529,6 +553,10 @@ vb_exit_lock = make_box(make_color_rgb(200, 40, 40));
 generate_level = function() {
     audio_stop_sound(snd_alarm);
 
+    // Cada contrato abre um complexo maior, com mais salas e mais rotas.
+    cols = min(88, 52 + max(0, level - 1) * 4);
+    rows = min(62, 36 + max(0, level - 1) * 3);
+
     grid = array_create(cols);
     explored = array_create(cols);
     vis = array_create(cols);
@@ -544,7 +572,8 @@ generate_level = function() {
     // --- salas ---
     rooms = [];
     var _tries = 0;
-    while (array_length(rooms) < 9 && _tries < 500) {
+    var _room_target = min(18, 9 + floor(max(0, level - 1) * 0.8));
+    while (array_length(rooms) < _room_target && _tries < 900) {
         _tries++;
         var _w = irandom_range(6, 11);
         var _h = irandom_range(5, 8);
@@ -610,7 +639,7 @@ generate_level = function() {
 
     // --- itens ---
     items = [];
-    docs_total = min(3 + level, 8);
+    docs_total = min(4 + floor((level - 1) * 0.75), 12);
     docs_got = 0;
     for (var i = 0; i < docs_total; i++) {
         var _p = random_floor(player.x, player.y, 260);
@@ -627,11 +656,11 @@ generate_level = function() {
 
     // --- inimigos ---
     enemies = [];
-    repeat (min(1 + ceil(level * 0.65), 5)) spawn_enemy(400);
+    repeat (min(2 + ceil(level * 0.7), 8)) spawn_enemy(460);
     spawn_timer = 0;
     // A fase 1 permanece intensa; as seguintes escalam mais devagar.
-    spawn_interval = max(980, 1580 - max(0, level - 1) * 45);
-    max_enemies = min(7, 2 + ceil(level * 0.55));
+    spawn_interval = max(560, 1650 - max(0, level - 1) * 105);
+    max_enemies = min(12, 3 + ceil(level * 0.8));
 
     // --- poeira ambiente, sangue, textos ---
     dust = [];
