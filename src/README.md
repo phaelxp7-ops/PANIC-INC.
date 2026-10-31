@@ -8,7 +8,10 @@ Estes arquivos vieram dos eventos enviados: `Create_0.gml`, `Step_0.gml`, `Draw_
 - A dificuldade de cada estrutura varia conforme a distância e o sorteio da geração: áreas de risco maior podem gerar perseguidores mais fortes e causar mais dano.
 - Os contratos sorteiam um objetivo entre recuperar arquivos, religar geradores ou conter anomalias; fusíveis e relíquias têm objetos e recompensas próprios.
 - A primeira visita a cada sala pode disparar uma emboscada, um apagão com perseguidor, um cache ou uma pista sonora falsa.
+- Um ou dois sobreviventes podem aparecer. Conversar rende suprimentos ou uma pista do objetivo; alguns revelam uma armadilha e chamam o Vigia.
 - Após concluir um contrato a partir da fase 2, o Vigia entra na caçada. Ele ignora a lanterna, reposiciona-se quando some de vista e pode disparar uma aparição curta.
+- Monstros e sobreviventes usam malhas low-poly procedurais arredondadas, silhuetas, membros e animação de movimento em vez de cubos como corpo.
+- Concluir uma tarefa dispara um pulso de extração e partículas antes da fuga.
 - O jogador recebe XP ao avançar nos objetivos. Ao subir de nível de campo, aumenta vida e vigor e recupera parte dos recursos.
 - No modo 3D, o mouse controla a visão horizontal e vertical; o minimapa acompanha os mapas maiores.
 - Pisos e paredes usam paletas procedurais por estrutura, além de grades, faixas e marcas geométricas. São detalhes em cores de vértice; o projeto ainda não tem texturas bitmap/modelos 3D próprios.
