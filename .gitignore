@@ -1,16 +1,36 @@
-# Arquivos de cache e build do GameMaker
+# GameMaker: projetos antigos, pacotes e arquivos locais do usuário
 .gmx/
 .yyz/
-options/main/template_info.yy
+*.user
+*.yyp.user
+*.project.user
+*.resource_order
+*.log
+
+# Builds e exportações
 *.win
 *.unx
 *.ios
 *.android
+*.html5
+*.droid
+*.exe
+*.app/
 *.zip
-*.user
-*.log
-
-# Pastas temporárias geradas na compilação
 /export/
 /build/
 /crashes/
+
+# Cache e arquivos temporários
+/.cache/
+/cache/
+/temp/
+/tmp/
+*.tmp
+*.bak
+*.swp
+Thumbs.db
+.DS_Store
+
+# Configuração local do editor
+options/main/template_info.yy
