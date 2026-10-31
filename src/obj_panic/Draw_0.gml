@@ -1,5 +1,5 @@
 // PANIC INC. v4 - mundo 2D/3D
-draw_clear(make_color_rgb(5, 6, 10));
+draw_clear(make_color_rgb(10, 15, 25));
 
 // A camera de primeira pessoa usa o mesmo mundo gerado pelo jogo 2D.
 if (mode == 1 && state != STATE_TITLE && state != STATE_INTRO) {

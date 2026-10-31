@@ -62,9 +62,25 @@ def atlas_group(atlas: Image.Image, source: Image.Image, group_x: int, group_y: 
             atlas.paste(corner, (left + dx, top + dy))
 
 
+def atlas_seamless_group(atlas: Image.Image, source: Image.Image, group_x: int, group_y: int) -> None:
+    """Keep neighboring outdoor floor cells phase-aligned to avoid visible seams."""
+    base = ImageOps.fit(source.convert("RGB"), (CELL - PAD * 2, CELL - PAD * 2),
+                        method=Image.Resampling.LANCZOS)
+    for variant in range(16):
+        patch = ImageEnhance.Brightness(base).enhance(0.99 + (variant % 3) * 0.01)
+        col, row = group_x + variant % 4, group_y + variant // 4
+        left, top = col * CELL + PAD, row * CELL + PAD
+        atlas.paste(patch, (left, top))
+        atlas.paste(patch.crop((0, 0, patch.width, 1)).resize((patch.width, PAD)), (left, top - PAD))
+        atlas.paste(patch.crop((0, patch.height - 1, patch.width, patch.height)).resize((patch.width, PAD)), (left, top + patch.height))
+        atlas.paste(patch.crop((0, 0, 1, patch.height)).resize((PAD, patch.height)), (left - PAD, top))
+        atlas.paste(patch.crop((patch.width - 1, 0, patch.width, patch.height)).resize((PAD, patch.height)), (left + patch.width, top))
+
+
 def build_world_atlas() -> None:
     atlas = Image.new("RGB", (CELL * 8, CELL * 8), (24, 28, 27))
-    atlas_group(atlas, Image.open(POLY / "forrest_ground_03_diff_1k.jpg"), 0, 0, 431, 0.96, 1.18, (77, 93, 68))
+    forest = Image.open(POLY / "forrest_ground_03_diff_1k.jpg")
+    atlas_seamless_group(atlas, forest, 0, 0)
     atlas_group(atlas, Image.open(POLY / "asphalt_01_diff_1k.jpg"), 4, 0, 932, 1.18, 1.14)
     atlas_group(atlas, Image.open(POLY / "concrete_floor_diff_1k.jpg"), 0, 4, 177, 1.08, 1.13, (112, 145, 157))
     atlas_group(atlas, Image.open(POLY / "concrete_floor_diff_1k.jpg"), 4, 4, 610, 0.91, 1.18, (140, 78, 75))
