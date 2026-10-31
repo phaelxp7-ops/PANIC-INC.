@@ -34,13 +34,15 @@ mode  = 0;               // 0 = 2D, 1 = 3D (TAB)
 // ---------- CONFIGURACOES ----------
 tile = 32; cols = 52; rows = 36;
 wall_h = 64; eye_h = 36; fov = 72;
-mouse_sens = 0.15; turn_speed = 2.8;
+mouse_sens = 0.15; mouse_sens_y = 0.12; turn_speed = 2.8;
+camera_pitch = 0;
 flash_len = 200; flash_angle = 28; ambient_r = 70; ambient_cur = 70;
 ndx  = [1, -1, 0, 0];
 ndy  = [0, 0, 1, -1];
 ndx8 = [1, -1, 0, 0, 1, 1, -1, -1];
 ndy8 = [0, 0, 1, -1, 1, -1, 1, -1];
 item_names = ["DOCUMENTO CONFIDENCIAL", "KIT MEDICO", "BATERIA"];
+structure_names = ["ARQUIVO", "ENFERMARIA", "SUBESTACAO", "ABRIGO" ];
 
 // ---------- MELHORIAS (upgrades entre fases) ----------
 speed_mult = 1; stam_mult = 1; batt_mult = 1; hear_mult = 1; extra_pickups = 0;
@@ -92,6 +94,7 @@ player = {
     facing_dir : 0,
     hp : 100, hp_max : 100,
     stamina : 100, stamina_max : 100, exhausted : false,
+    rank : 1, xp : 0, xp_next : 5,
     hurt_cd : 0,
     bob : 0
 };
@@ -360,18 +363,23 @@ random_floor = function(_fx, _fy, _mind) {
 // Tipos: 0 = normal, 1 = corredor (rapido), 2 = perseguidor (congela na luz)
 spawn_enemy = function(_mind) {
     var _p = random_floor(player.x, player.y, _mind);
+    var _zone_danger = 0.15;
+    var _zone_dist = 1000000;
+    for (var k = 0; k < array_length(rooms); k++) {
+        var _room = rooms[k];
+        var _rd = point_distance(_p.x, _p.y, (_room.x + _room.w * 0.5) * tile, (_room.y + _room.h * 0.5) * tile);
+        if (_rd < _zone_dist) { _zone_dist = _rd; _zone_danger = _room.danger; }
+    }
+    var _threat = clamp(level + floor(_zone_danger * 3), 1, 24);
     var _r = random(1);
     var _type = 0;
-    if (level >= 2 && _r < 0.25) _type = 1;
-    else if (level >= 3 && _r > 0.78) _type = 2;
-    // A partir da fase 4, perseguidores aceleram e variantes aparecem com mais frequencia.
-    if (level >= 4 && _r < min(0.44, 0.25 + (level - 3) * 0.025)) _type = 1;
-    else if (level >= 5 && _r > max(0.58, 0.78 - (level - 4) * 0.025)) _type = 2;
-    var _spd = min(1.85, 0.78 + level * 0.075) + random_range(-0.06, 0.06);
+    if (_threat >= 2 && _r < min(0.48, 0.16 + _zone_danger * 0.30 + max(0, level - 3) * 0.018)) _type = 1;
+    else if (_threat >= 3 && _r > max(0.52, 0.84 - _zone_danger * 0.24 - max(0, level - 4) * 0.015)) _type = 2;
+    var _spd = min(2.2, 0.72 + _threat * 0.065 + _zone_danger * 0.15) + random_range(-0.06, 0.06);
     if (_type == 1) _spd *= 1.32;
     if (_type == 2) _spd *= 1.14;
     array_push(enemies, {
-        x : _p.x, y : _p.y, spd : _spd, type : _type,
+        x : _p.x, y : _p.y, spd : _spd, type : _type, danger : _zone_danger,
         face : random(360), anim : random(360), lit : false,
         mode : 0, wdir : random(360), wt : irandom_range(30, 90), lost : 0, stun : 0
     });
@@ -481,8 +489,11 @@ draw_box3d = function(_vb, _x, _y, _z, _sx, _sy, _sz, _rz) {
     matrix_set(matrix_world, matrix_build_identity());
 };
 
-wall_face = function(_ax, _ay, _bx, _by, _k) {
+wall_face = function(_ax, _ay, _bx, _by, _k, _theme) {
     var _base = make_color_rgb(120, 125, 150);
+    if (_theme == 1) _base = make_color_rgb(105, 145, 125);
+    else if (_theme == 2) _base = make_color_rgb(155, 112, 78);
+    else if (_theme == 3) _base = make_color_rgb(135, 125, 105);
     var _hh = wall_h;
     vquad(vb_world, _ax,_ay,0,   _bx,_by,0,   _bx,_by,14,      _ax,_ay,14,      shade(_base, _k * 0.55));
     vquad(vb_world, _ax,_ay,14,  _bx,_by,14,  _bx,_by,_hh-6,   _ax,_ay,_hh-6,   shade(_base, _k));
@@ -510,10 +521,21 @@ build_3d = function() {
         for (var r = 0; r < rows; r++) {
             var _x1 = c * tile; var _y1 = r * tile;
             var _x2 = _x1 + tile; var _y2 = _y1 + tile;
+            var _theme = 0;
+            var _room_dist = 1000000;
+            for (var q = 0; q < array_length(rooms); q++) {
+                var _candidate = rooms[q];
+                var _qd = point_distance(c + 0.5, r + 0.5, _candidate.x + _candidate.w * 0.5, _candidate.y + _candidate.h * 0.5);
+                if (_qd < _room_dist) { _room_dist = _qd; _theme = _candidate.theme; }
+            }
             if (grid[c][r] == 0) {
-                var _k = 0.85 + 0.15 * (((c * 7 + r * 13) mod 5) / 4);
+                var _k = 0.82 + 0.18 * (((c * 7 + r * 13) mod 5) / 4);
                 var _chk = (((c + r) mod 2) == 0) ? 1.0 : 0.88;
-                var _fc = shade(make_color_rgb(95, 95, 110), _k * _chk);
+                var _floor_base = make_color_rgb(95, 100, 112);
+                if (_theme == 1) _floor_base = make_color_rgb(82, 112, 96);
+                else if (_theme == 2) _floor_base = make_color_rgb(120, 83, 58);
+                else if (_theme == 3) _floor_base = make_color_rgb(112, 105, 83);
+                var _fc = shade(_floor_base, _k * _chk);
                 vquad(vb_world, _x1,_y1,0, _x2,_y1,0, _x2,_y2,0, _x1,_y2,0, _fc);
                 // Faixas de piso e grelhas de drenagem para dar escala e leitura ao corredor.
                 if (((c * 13 + r * 7) mod 9) == 0) {
@@ -526,10 +548,10 @@ build_3d = function() {
                 }
                 vquad(vb_world, _x1,_y1,wall_h, _x2,_y1,wall_h, _x2,_y2,wall_h, _x1,_y2,wall_h, make_color_rgb(40, 40, 52));
             } else {
-                if (r > 0 && grid[c][r - 1] == 0)           wall_face(_x1, _y1, _x2, _y1, 0.95);
-                if (r < rows - 1 && grid[c][r + 1] == 0)    wall_face(_x1, _y2, _x2, _y2, 0.70);
-                if (c > 0 && grid[c - 1][r] == 0)           wall_face(_x1, _y1, _x1, _y2, 0.80);
-                if (c < cols - 1 && grid[c + 1][r] == 0)    wall_face(_x2, _y1, _x2, _y2, 0.60);
+                if (r > 0 && grid[c][r - 1] == 0)           wall_face(_x1, _y1, _x2, _y1, 0.95, _theme);
+                if (r < rows - 1 && grid[c][r + 1] == 0)    wall_face(_x1, _y2, _x2, _y2, 0.70, _theme);
+                if (c > 0 && grid[c - 1][r] == 0)           wall_face(_x1, _y1, _x1, _y2, 0.80, _theme);
+                if (c < cols - 1 && grid[c + 1][r] == 0)    wall_face(_x2, _y1, _x2, _y2, 0.60, _theme);
             }
         }
     }
@@ -554,8 +576,8 @@ generate_level = function() {
     audio_stop_sound(snd_alarm);
 
     // Cada contrato abre um complexo maior, com mais salas e mais rotas.
-    cols = min(88, 52 + max(0, level - 1) * 4);
-    rows = min(62, 36 + max(0, level - 1) * 3);
+    cols = min(128, 96 + max(0, level - 1) * 5);
+    rows = min(90, 68 + max(0, level - 1) * 4);
 
     grid = array_create(cols);
     explored = array_create(cols);
@@ -572,11 +594,11 @@ generate_level = function() {
     // --- salas ---
     rooms = [];
     var _tries = 0;
-    var _room_target = min(18, 9 + floor(max(0, level - 1) * 0.8));
-    while (array_length(rooms) < _room_target && _tries < 900) {
+    var _room_target = min(24, 12 + floor(max(0, level - 1) * 0.8));
+    while (array_length(rooms) < _room_target && _tries < 1800) {
         _tries++;
-        var _w = irandom_range(6, 11);
-        var _h = irandom_range(5, 8);
+        var _w = irandom_range(8, 15);
+        var _h = irandom_range(6, 11);
         var _cx = irandom_range(2, cols - _w - 3);
         var _cy = irandom_range(2, rows - _h - 3);
         var _ok = true;
@@ -587,7 +609,7 @@ generate_level = function() {
                 break;
             }
         }
-        if (_ok) array_push(rooms, { x : _cx, y : _cy, w : _w, h : _h });
+        if (_ok) array_push(rooms, { x : _cx, y : _cy, w : _w, h : _h, theme : irandom(3), danger : 0.2, kind : 0 });
     }
     for (var k = 0; k < array_length(rooms); k++) {
         var _rm = rooms[k];
@@ -595,6 +617,18 @@ generate_level = function() {
     }
     for (var k = 1; k < array_length(rooms); k++) connect_rooms(rooms[k - 1], rooms[k]);
     repeat (3) connect_rooms(rooms[irandom(array_length(rooms) - 1)], rooms[irandom(array_length(rooms) - 1)]);
+
+    // Cada estrutura recebe identidade e risco proprios; alas distantes tendem a ser mais perigosas.
+    var _origin = rooms[0];
+    var _world_diag = max(1, point_distance(0, 0, cols, rows));
+    for (var k = 0; k < array_length(rooms); k++) {
+        var _z = rooms[k];
+        var _dist = point_distance(_origin.x + _origin.w * 0.5, _origin.y + _origin.h * 0.5, _z.x + _z.w * 0.5, _z.y + _z.h * 0.5);
+        _z.kind = irandom(3);
+        _z.theme = _z.kind;
+        _z.danger = clamp(0.12 + (_dist / _world_diag) * 1.05 + random_range(-0.12, 0.2) + max(0, level - 1) * 0.012, 0.08, 1);
+        rooms[k] = _z;
+    }
 
     // --- pilares nas salas (cobertura e variedade) ---
     for (var k = 1; k < array_length(rooms); k++) {
@@ -618,6 +652,7 @@ generate_level = function() {
     player.x = (_s.x + _s.w div 2) * tile + tile / 2;
     player.y = (_s.y + _s.h div 2) * tile + tile / 2;
     player.facing_dir = 0;
+    camera_pitch = 0;
     player.hurt_cd = 0;
     player.bob = 0;
 
@@ -681,7 +716,8 @@ generate_level = function() {
     update_visibility();
     update_flow();
     build_3d();
-    show_msg("FASE " + string(level) + ": ache " + string(docs_total) + " documentos", 200);
+    current_zone = rooms[0];
+    show_msg("COMPLEXO " + string(level) + ": explore, colete dados e encontre a saida", 240);
 };
 
 apply_upgrade = function(_id) {
@@ -716,10 +752,13 @@ save_best = function() {
 new_game = function() {
     pontos = 0;
     level = 1;
+    player.rank = 1; player.xp = 0; player.xp_next = 5;
     speed_mult = 1; stam_mult = 1; batt_mult = 1; hear_mult = 1; extra_pickups = 0;
     flash_len = 200; flash_angle = 28;
+    camera_pitch = 0;
     player.hp_max = 100;
     player.hp = player.hp_max;
+    player.stamina_max = 100;
     player.stamina = player.stamina_max;
     player.exhausted = false;
     battery = 100;
