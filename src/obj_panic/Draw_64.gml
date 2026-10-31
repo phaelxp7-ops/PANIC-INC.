@@ -88,7 +88,8 @@ if (state == STATE_UPGRADE) {
         draw_set_color(make_color_rgb(75, 103, 125)); draw_roundrect(_ux, 220, _ux + 300, 485, true);
         gtext(_ux + 150, 255, "[ " + string(i + 1) + " ]", 1.4, c_yellow);
         gtext(_ux + 150, 315, upg_defs[upg_choice[i]].name, 1.25, c_aqua);
-        draw_set_color(c_ltgray); draw_text_ext(_ux + 22, 370, upg_defs[upg_choice[i]].desc, 4, 256);
+        draw_set_halign(fa_center);
+        draw_set_color(c_ltgray); draw_text_ext(_ux + 150, 370, upg_defs[upg_choice[i]].desc, 4, 256);
     }
     draw_set_halign(fa_left);
     exit;

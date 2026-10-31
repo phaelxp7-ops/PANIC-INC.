@@ -89,17 +89,17 @@ if (mode == 1 && state != STATE_TITLE && state != STATE_INTRO) {
     for (var i = 0; i < array_length(npcs); i++) {
         var _npc = npcs[i];
         if (point_distance(_npc.x, _npc.y, player.x, player.y) > 420) continue;
-        var _nb = 1.5 * sin(current_time / 200 + i);
+        var _nb = 0.8 * sin(current_time / 200 + i);
         var _npc_body = (_npc.kind == 3 && _npc.revealed) ? vb_npc_alert : vb_npc;
         var _nf = _npc.face;
         var _walk = sin(current_time / 95 + i * 2) * 3;
         // Silhueta humana em camadas: casaco, ombros, cabeça, braços e pernas.
-        draw_box3d(_npc_body, _npc.x, _npc.y, 20 + _nb, 13, 9, 19, _nf);
-        draw_box3d(_npc_body, _npc.x + lengthdir_x(1, _nf), _npc.y + lengthdir_y(1, _nf), 30 + _nb, 17, 11, 10, _nf);
-        draw_box3d(vb_hd[2], _npc.x + lengthdir_x(2, _nf), _npc.y + lengthdir_y(2, _nf), 39 + _nb, 8, 8, 10, _nf);
+        draw_box3d(_npc_body, _npc.x, _npc.y, 17 + _nb, 9, 7, 16, _nf);
+        draw_box3d(_npc_body, _npc.x + lengthdir_x(1, _nf), _npc.y + lengthdir_y(1, _nf), 26 + _nb, 13, 8, 9, _nf);
+        draw_box3d(vb_hd[2], _npc.x + lengthdir_x(2, _nf), _npc.y + lengthdir_y(2, _nf), 34 + _nb, 6, 6, 8, _nf);
         for (var _side = -1; _side <= 1; _side += 2) {
-            draw_box3d(_npc_body, _npc.x + lengthdir_x(7 * _side, _nf + 90), _npc.y + lengthdir_y(7 * _side, _nf + 90), 22 + _nb + _walk * _side, 5, 6, 17, _nf + 8 * _side);
-            draw_box3d(vb_body[0], _npc.x + lengthdir_x(4 * _side, _nf + 90), _npc.y + lengthdir_y(4 * _side, _nf + 90), 6 + _nb - _walk * _side, 5, 6, 12, _nf - 8 * _side);
+            draw_box3d(_npc_body, _npc.x + lengthdir_x(6 * _side, _nf + 90), _npc.y + lengthdir_y(6 * _side, _nf + 90), 20 + _nb + _walk * _side, 3.5, 4, 13, _nf + 8 * _side);
+            draw_box3d(vb_body[0], _npc.x + lengthdir_x(3 * _side, _nf + 90), _npc.y + lengthdir_y(3 * _side, _nf + 90), 5 + _nb - _walk * _side, 3.5, 4, 10, _nf - 8 * _side);
         }
         // Um pequeno reflexo ocular identifica a face quando a lanterna a alcança.
         if (flash_on && point_distance(_npc.x, _npc.y, player.x, player.y) < flash_len) {

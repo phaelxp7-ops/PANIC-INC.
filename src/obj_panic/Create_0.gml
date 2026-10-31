@@ -974,6 +974,10 @@ vquad = function(_vb, _x1, _y1, _z1, _x2, _y2, _z2, _x3, _y3, _z3, _x4, _y4, _z4
     vv(_vb, _x1, _y1, _z1, _c); vv(_vb, _x3, _y3, _z3, _c); vv(_vb, _x4, _y4, _z4, _c);
 };
 
+vtri = function(_vb, _x1, _y1, _z1, _x2, _y2, _z2, _x3, _y3, _z3, _c) {
+    vv(_vb, _x1, _y1, _z1, _c); vv(_vb, _x2, _y2, _z2, _c); vv(_vb, _x3, _y3, _z3, _c);
+};
+
 make_box = function(_c) {
     var _vb = vertex_create_buffer();
     vertex_begin(_vb, vf);
@@ -1066,14 +1070,33 @@ build_3d = function() {
                 var _noise = abs((c * 37 + r * 71 + c * r * 13) mod 19) / 100;
                 var _fc = shade(pal_floor[_bi], _k * (0.94 + _noise));
                 vquad(vb_world, _x1,_y1,0, _x2,_y1,0, _x2,_y2,0, _x1,_y2,0, _fc);
-                vquad(vb_world, _x1,_y1,wall_h, _x2,_y1,wall_h, _x2,_y2,wall_h, _x1,_y2,wall_h, make_color_rgb(34, 34, 44));
+                // A floresta e externa: sem teto de concreto fechando o ceu.
+                if (_bi != 0) vquad(vb_world, _x1,_y1,wall_h, _x2,_y1,wall_h, _x2,_y2,wall_h, _x1,_y2,wall_h, make_color_rgb(34, 34, 44));
             } else {
                 var _dr = (grid[c][r] == 2);
                 var _wb = pal_wall[_bi];
-                if (r > 0 && grid[c][r - 1] == 0)           wall_face(_x1, _y1, _x2, _y1, 0.95, _wb, _dr);
-                if (r < rows - 1 && grid[c][r + 1] == 0)    wall_face(_x1, _y2, _x2, _y2, 0.70, _wb, _dr);
-                if (c > 0 && grid[c - 1][r] == 0)           wall_face(_x1, _y1, _x1, _y2, 0.80, _wb, _dr);
-                if (c < cols - 1 && grid[c + 1][r] == 0)    wall_face(_x2, _y1, _x2, _y2, 0.60, _wb, _dr);
+                if (_bi == 0 && c < 47 && !_dr) {
+                    // Obstaculos da mata viram pinheiros; deixam de parecer paredes.
+                    var _tx = _x1 + tile * 0.5; var _ty = _y1 + tile * 0.5;
+                    var _trunk = make_color_rgb(58, 39, 27);
+                    vquad(vb_world,_tx-3,_ty-3,0, _tx+3,_ty-3,0, _tx+3,_ty-3,32, _tx-3,_ty-3,32, shade(_trunk,0.8));
+                    vquad(vb_world,_tx+3,_ty-3,0, _tx+3,_ty+3,0, _tx+3,_ty+3,32, _tx+3,_ty-3,32, shade(_trunk,0.65));
+                    vquad(vb_world,_tx+3,_ty+3,0, _tx-3,_ty+3,0, _tx-3,_ty+3,32, _tx+3,_ty+3,32, shade(_trunk,0.75));
+                    vquad(vb_world,_tx-3,_ty+3,0, _tx-3,_ty-3,0, _tx-3,_ty-3,32, _tx-3,_ty+3,32, shade(_trunk,0.55));
+                    for (var _layer = 0; _layer < 3; _layer++) {
+                        var _base_z = 22 + _layer * 13; var _rad = 17 - _layer * 4; var _top_z = _base_z + 27;
+                        var _leaf = shade(make_color_rgb(24, 55 + _layer * 8, 34), 0.8 + ((c * 7 + r * 11 + _layer) mod 5) * 0.08);
+                        vtri(vb_world,_tx-_rad,_ty-_rad,_base_z, _tx+_rad,_ty-_rad,_base_z, _tx,_ty,_top_z, _leaf);
+                        vtri(vb_world,_tx+_rad,_ty-_rad,_base_z, _tx+_rad,_ty+_rad,_base_z, _tx,_ty,_top_z, _leaf);
+                        vtri(vb_world,_tx+_rad,_ty+_rad,_base_z, _tx-_rad,_ty+_rad,_base_z, _tx,_ty,_top_z, shade(_leaf,0.82));
+                        vtri(vb_world,_tx-_rad,_ty+_rad,_base_z, _tx-_rad,_ty-_rad,_base_z, _tx,_ty,_top_z, shade(_leaf,0.72));
+                    }
+                } else {
+                    if (r > 0 && grid[c][r - 1] == 0)           wall_face(_x1, _y1, _x2, _y1, 0.95, _wb, _dr);
+                    if (r < rows - 1 && grid[c][r + 1] == 0)    wall_face(_x1, _y2, _x2, _y2, 0.70, _wb, _dr);
+                    if (c > 0 && grid[c - 1][r] == 0)           wall_face(_x1, _y1, _x1, _y2, 0.80, _wb, _dr);
+                    if (c < cols - 1 && grid[c + 1][r] == 0)    wall_face(_x2, _y1, _x2, _y2, 0.60, _wb, _dr);
+                }
             }
         }
     }
@@ -1088,8 +1111,8 @@ vb_lamp  = make_box(make_color_rgb(255, 230, 150));
 vb_body  = [make_sphere(make_color_rgb(70, 76, 100)), make_sphere(make_color_rgb(110, 50, 36)), make_sphere(make_color_rgb(215, 215, 225)), make_sphere(make_color_rgb(40, 20, 60))];
 vb_hd    = [make_sphere(make_color_rgb(110, 118, 140)), make_sphere(make_color_rgb(150, 70, 50)), make_sphere(make_color_rgb(240, 240, 250)), make_sphere(make_color_rgb(70, 40, 100))];
 vb_eye   = make_sphere(make_color_rgb(255, 255, 80));
-vb_npc   = make_sphere(make_color_rgb(190, 110, 130));
-vb_npc_alert = make_sphere(make_color_rgb(125, 18, 28));
+vb_npc   = make_sphere(make_color_rgb(54, 67, 62));
+vb_npc_alert = make_sphere(make_color_rgb(88, 24, 30));
 vb_boss  = make_sphere(make_color_rgb(130, 10, 20));
 vb_core  = make_sphere(make_color_rgb(255, 50, 50));
 vb_spike = make_spike(make_color_rgb(24, 8, 18));
