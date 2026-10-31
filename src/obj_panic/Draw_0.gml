@@ -246,7 +246,7 @@ for (var i = 0; i < array_length(items); i++) {
     // brilho
     gpu_set_blendmode(bm_add);
     draw_set_alpha(_lb * 0.25);
-    draw_set_color(_it.type == 0 ? c_yellow : (_it.type == 1 ? c_lime : (_it.type == 2 ? c_aqua : (_it.type == 3 ? c_orange : make_color_rgb(210, 80, 255))));
+    draw_set_color(_it.type == 0 ? c_yellow : (_it.type == 1 ? c_lime : (_it.type == 2 ? c_aqua : (_it.type == 3 ? c_orange : make_color_rgb(210, 80, 255)))));
     draw_circle(_it.x, _it.y + _oy, 14 + sin(_it.timer * 0.1) * 2, false);
     gpu_set_blendmode(bm_normal);
     draw_set_alpha(clamp(_lb * 1.4, 0, 1));
