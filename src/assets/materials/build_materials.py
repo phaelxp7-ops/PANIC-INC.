@@ -66,6 +66,9 @@ def atlas_seamless_group(atlas: Image.Image, source: Image.Image, group_x: int, 
     """Keep neighboring outdoor floor cells phase-aligned to avoid visible seams."""
     base = ImageOps.fit(source.convert("RGB"), (CELL - PAD * 2, CELL - PAD * 2),
                         method=Image.Resampling.LANCZOS)
+    # The source is warm tan soil; cool and darken it to read as damp woodland earth.
+    base = ImageEnhance.Brightness(base).enhance(0.76)
+    base = Image.blend(base, Image.new("RGB", base.size, (48, 67, 42)), 0.16)
     for variant in range(16):
         patch = ImageEnhance.Brightness(base).enhance(0.99 + (variant % 3) * 0.01)
         col, row = group_x + variant % 4, group_y + variant // 4
