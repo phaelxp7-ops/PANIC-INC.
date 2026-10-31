@@ -43,7 +43,7 @@ if (mode == 1) {
     for (var i = 0; i < array_length(items); i++) {
         var _it = items[i];
         if (point_distance(_it.x, _it.y, player.x, player.y) > 420) continue;
-        var _vbi = (_it.type == 0) ? vb_doc : ((_it.type == 1) ? vb_med : vb_bat);
+        var _vbi = (_it.type == 0) ? vb_doc : ((_it.type == 1) ? vb_med : ((_it.type == 2) ? vb_bat : ((_it.type == 3) ? vb_fuse : vb_relic)));
         var _zz = 14 + sin(_it.timer * 0.05) * 3;
         draw_box3d(_vbi, _it.x, _it.y, _zz, 10, 10, 10, _it.timer * 2);
     }
@@ -54,14 +54,20 @@ if (mode == 1) {
         if (point_distance(_en.x, _en.y, player.x, player.y) > 420) continue;
         var _stride = sin(_en.anim * 0.18) * (_en.mode == 1 ? 5 : 2);
         var _bz = abs(sin(_en.anim * 0.18)) * (_en.mode == 1 ? 3.5 : 1.2);
-        var _hgt = (_en.type == 1) ? 29 : ((_en.type == 2) ? 44 : 36);
-        var _wid = (_en.type == 1) ? 9 : 12;
+        var _hgt = (_en.type == 3) ? 58 : ((_en.type == 1) ? 29 : ((_en.type == 2) ? 44 : 36));
+        var _wid = (_en.type == 3) ? 8 : ((_en.type == 1) ? 9 : 12);
         var _turn = _en.face + sin(_en.anim * 0.07) * 3;
         draw_box3d(vb_body[_en.type], _en.x, _en.y, _hgt / 2 + _bz, _wid, _wid * 0.78, _hgt, _turn);
         draw_box3d(vb_hd[_en.type], _en.x + lengthdir_x(2, _turn), _en.y + lengthdir_y(2, _turn), _hgt + 6 + _bz, 12, 12, 12, _turn + sin(_en.anim * 0.12) * 8);
         // Bracos e pernas articulados: movimento alternado deixa a perseguicao visivel em primeira pessoa.
         draw_box3d(vb_body[_en.type], _en.x + lengthdir_x(_stride, _turn + 90), _en.y + lengthdir_y(_stride, _turn + 90), _hgt * 0.52 + _bz, 4.5, 5, _hgt * 0.48, _turn + 12);
         draw_box3d(vb_body[_en.type], _en.x - lengthdir_x(_stride, _turn + 90), _en.y - lengthdir_y(_stride, _turn + 90), _hgt * 0.52 + _bz, 4.5, 5, _hgt * 0.48, _turn - 12);
+        if (_en.type == 3) {
+            // O Vigia e alto, estreito, com bracos pendentes e caixa toracica marcada.
+            draw_box3d(vb_hd[3], _en.x, _en.y, _hgt * 0.67 + _bz, 9, 3, 4, _turn);
+            draw_box3d(vb_body[3], _en.x + lengthdir_x(9, _turn + 90), _en.y + lengthdir_y(9, _turn + 90), _hgt * 0.56 + _bz, 3, 4, _hgt * 0.78, _turn + 8);
+            draw_box3d(vb_body[3], _en.x - lengthdir_x(9, _turn + 90), _en.y - lengthdir_y(9, _turn + 90), _hgt * 0.56 + _bz, 3, 4, _hgt * 0.78, _turn - 8);
+        }
     }
 
     // ---- SEM NEVOA: olhos, lampadas e farol da saida (brilham no escuro) ----
@@ -71,11 +77,12 @@ if (mode == 1) {
         var _en2 = enemies[i];
         if (point_distance(_en2.x, _en2.y, player.x, player.y) > 380) continue;
         var _bz2 = sin(_en2.anim * 0.1) * 1.5;
-        var _eh = ((_en2.type == 1) ? 29 : ((_en2.type == 2) ? 44 : 36)) + 7 + _bz2;
-        for (var s = -1; s <= 1; s += 2) {
+        var _eh = ((_en2.type == 3) ? 58 : ((_en2.type == 1) ? 29 : ((_en2.type == 2) ? 44 : 36))) + 7 + _bz2;
+        var _eye_step = (_en2.type == 3) ? 1 : 2;
+        for (var s = -1; s <= 1; s += _eye_step) {
             var _ox = _en2.x + lengthdir_x(7, _en2.face) + lengthdir_x(3.5 * s, _en2.face + 90);
             var _oy = _en2.y + lengthdir_y(7, _en2.face) + lengthdir_y(3.5 * s, _en2.face + 90);
-            draw_box3d(vb_eye, _ox, _oy, _eh, 2.5, 2.5, 2.5, 0);
+            draw_box3d(_en2.type == 3 ? vb_eye_watcher : vb_eye, _ox, _oy, _eh, _en2.type == 3 ? 3.2 : 2.5, 2.5, 2.5, 0);
         }
     }
     for (var k = 0; k < array_length(lamps); k++) {
@@ -239,7 +246,7 @@ for (var i = 0; i < array_length(items); i++) {
     // brilho
     gpu_set_blendmode(bm_add);
     draw_set_alpha(_lb * 0.25);
-    draw_set_color(_it.type == 0 ? c_yellow : (_it.type == 1 ? c_lime : c_aqua));
+    draw_set_color(_it.type == 0 ? c_yellow : (_it.type == 1 ? c_lime : (_it.type == 2 ? c_aqua : (_it.type == 3 ? c_orange : make_color_rgb(210, 80, 255))));
     draw_circle(_it.x, _it.y + _oy, 14 + sin(_it.timer * 0.1) * 2, false);
     gpu_set_blendmode(bm_normal);
     draw_set_alpha(clamp(_lb * 1.4, 0, 1));
@@ -256,11 +263,21 @@ for (var i = 0; i < array_length(items); i++) {
         draw_set_color(c_red);
         draw_rectangle(_it.x - 5, _it.y - 1.5 + _oy, _it.x + 5, _it.y + 1.5 + _oy, false);
         draw_rectangle(_it.x - 1.5, _it.y - 5 + _oy, _it.x + 1.5, _it.y + 5 + _oy, false);
-    } else {
+    } else if (_it.type == 2) {
         draw_set_color(c_aqua);
         draw_rectangle(_it.x - 4, _it.y - 7 + _oy, _it.x + 4, _it.y + 7 + _oy, false);
         draw_set_color(c_white);
         draw_rectangle(_it.x - 2, _it.y - 9 + _oy, _it.x + 2, _it.y - 7 + _oy, false);
+    } else if (_it.type == 3) {
+        draw_set_color(c_dkgray);
+        draw_rectangle(_it.x - 8, _it.y - 5 + _oy, _it.x + 8, _it.y + 5 + _oy, false);
+        draw_set_color(c_orange);
+        draw_rectangle(_it.x - 5, _it.y - 3 + _oy, _it.x + 5, _it.y + 3 + _oy, false);
+        draw_line_width(_it.x - 7, _it.y - 7 + _oy, _it.x + 7, _it.y + 7 + _oy, 2);
+    } else {
+        draw_set_color(make_color_rgb(210, 80, 255));
+        draw_triangle(_it.x, _it.y - 9 + _oy, _it.x + 8, _it.y + _oy, _it.x, _it.y + 9 + _oy, false);
+        draw_triangle(_it.x, _it.y - 9 + _oy, _it.x - 8, _it.y + _oy, _it.x, _it.y + 9 + _oy, false);
     }
     draw_set_alpha(1);
 }
@@ -279,9 +296,10 @@ for (var i = 0; i < array_length(enemies); i++) {
     var _eeye = c_yellow;
     if (_en.type == 1) { _ecol = make_color_rgb(140, 60, 190); _eeye = make_color_rgb(255, 90, 255); }
     if (_en.type == 2) { _ecol = make_color_rgb(215, 215, 225); _eeye = c_white; }
+    if (_en.type == 3) { _ecol = make_color_rgb(35, 12, 27); _eeye = make_color_rgb(255, 35, 48); }
     if (_en.lit) _ecol = merge_color(_ecol, c_white, 0.45);
     var _pul = sin(_en.anim * 0.1);
-    var _rad = ((_en.type == 1) ? 8 : 11) + _pul;
+    var _rad = (_en.type == 3) ? 14 + _pul * 2 : (((_en.type == 1) ? 8 : 11) + _pul);
 
     if (_eb >= 0.1) {
         draw_set_alpha(clamp(_eb * 1.5, 0, 1));
@@ -329,6 +347,12 @@ for (var i = 0; i < array_length(enemies); i++) {
         draw_set_alpha(1);
         draw_set_color(_eeye);
         draw_circle(_ex2, _ey2, 2, false);
+    }
+    if (_en.type == 3) {
+        var _third_eye_x = _en.x + lengthdir_x(5, _en.face);
+        var _third_eye_y = _en.y + lengthdir_y(5, _en.face);
+        draw_set_color(_eeye);
+        draw_circle(_third_eye_x, _third_eye_y, 3, false);
     }
     draw_set_alpha(1);
 }
