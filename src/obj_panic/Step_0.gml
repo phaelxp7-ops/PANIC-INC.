@@ -54,6 +54,7 @@ if (player.hurt_cd > 0) player.hurt_cd--;
 shake = max(0, shake - 0.6);
 hurt_flash = max(0, hurt_flash - 0.04);
 heart_pulse = max(0, heart_pulse - 0.07);
+jumpscare = max(0, jumpscare - 1);
 if (msg_timer > 0) msg_timer--;
 if (combo_timer > 0) { combo_timer--; if (combo_timer <= 0) combo = 0; }
 
@@ -206,6 +207,7 @@ alert_cd = max(0, alert_cd - 1);
 var _nearest = 99999;
 for (var i = 0; i < array_length(enemies); i++) {
     var _e = enemies[i];
+    _e.stalk_cd = max(0, _e.stalk_cd - 1);
     if (_e.stun > 0) {
         _e.stun--;
         _e.anim += 2;
@@ -235,6 +237,11 @@ for (var i = 0; i < array_length(enemies); i++) {
                 play_snd(snd_scare, clamp(1.1 - _dist / 600, 0.25, 0.9), random_range(0.9, 1.1));
                 add_floater(_e.x, _e.y - 16, "!", c_red);
                 if (_dist < 260) shake = max(shake, 5);
+                if (_e.type == 3 && _dist < 230) {
+                    jumpscare = max(jumpscare, 18);
+                    jumpscare_type = _e.type;
+                    show_msg("O VIGIA TE ENCONTROU", 100);
+                }
             }
         }
     } else if (_e.mode == 1) {
@@ -242,12 +249,34 @@ for (var i = 0; i < array_length(enemies); i++) {
         if (_e.lost > 240) _e.mode = 0;
     }
 
+    // O Vigia usa as salas fora de vista para se reposicionar atras do explorador.
+    if (_e.type == 3 && _e.mode == 1 && _e.lost > 55 && _dist > 250 && !_lit && _e.stalk_cd <= 0) {
+        var _behind = player.facing_dir + 180 + random_range(-35, 35);
+        var _sx = player.x + lengthdir_x(250, _behind);
+        var _sy = player.y + lengthdir_y(250, _behind);
+        if (box_hits(_sx, _sy, 8)) {
+            var _safe_spawn = random_floor(player.x, player.y, 210);
+            _sx = _safe_spawn.x;
+            _sy = _safe_spawn.y;
+        }
+        _e.x = _sx;
+        _e.y = _sy;
+        _e.face = point_direction(_sx, _sy, player.x, player.y);
+        _e.mode = 0;
+        _e.lost = 0;
+        _e.stalk_cd = irandom_range(480, 780);
+        play_snd(snd_growl, 0.65, 0.58);
+        show_msg("PASSOS ATRAS DE VOCE...", 100);
+        shake = max(shake, 3);
+        continue;
+    }
+
     // Velocidade
     var _sp = _e.spd * (alarm_on ? 1.25 : 1);
     if (_e.mode == 0) _sp *= 0.5;
     if (_e.type == 2) {
         if (_lit) _sp = 0;           // perseguidor congela na luz
-    } else if (_lit) {
+    } else if (_lit && _e.type != 3) {
         _sp *= 0.35;
     }
 
@@ -299,13 +328,14 @@ for (var i = 0; i < array_length(enemies); i++) {
     }
 
     // Rosnado ocasional
-    if (_e.mode == 1 && _dist < 320 && irandom(420) == 0) {
-        play_snd(snd_growl, clamp(1 - _dist / 350, 0.15, 0.7), random_range(0.8, 1.2));
+    if (_e.mode == 1 && _dist < 320 && irandom(_e.type == 3 ? 150 : 420) == 0) {
+        play_snd(snd_growl, clamp(1 - _dist / 350, 0.15, 0.8), random_range(0.65, 1.05));
     }
 
     // Dano
-    var _hr = (_e.type == 1) ? 17 : 19;
-    if (_dist < _hr) hurt_player(((_e.type == 1) ? 8 : 14) + floor(_e.danger * 3));
+    var _hr = (_e.type == 3) ? 24 : ((_e.type == 1) ? 17 : 19);
+    var _damage = (_e.type == 3) ? 22 : ((_e.type == 1) ? 8 : 14);
+    if (_dist < _hr) hurt_player(_damage + floor(_e.danger * 3));
 }
 panic = lerp(panic, clamp(100 - _nearest / 3.2, 0, 100), 0.05);
 
@@ -319,6 +349,44 @@ if ((level_time mod 20) == 0) {
         if (_room_dist < _near_room_dist) { _near_room_dist = _room_dist; _near_room = k; }
     }
     current_zone = rooms[_near_room];
+
+    // Salas especiais disparam um encontro unico na primeira visita.
+    var _pc_room = floor(player.x / tile);
+    var _pr_room = floor(player.y / tile);
+    for (var k = 1; k < array_length(rooms); k++) {
+        var _entering = rooms[k];
+        if (_pc_room < _entering.x || _pc_room >= _entering.x + _entering.w
+            || _pr_room < _entering.y || _pr_room >= _entering.y + _entering.h
+            || _entering.event_done) continue;
+
+        _entering.visited = true;
+        _entering.event_done = true;
+        rooms[k] = _entering;
+        var _roll = irandom(99);
+        var _ambush_limit = round(14 + _entering.danger * 36);
+        if (_roll < _ambush_limit) {
+            if (array_length(enemies) < max_enemies) spawn_enemy(150);
+            if (_entering.danger > 0.68 && array_length(enemies) < max_enemies) spawn_enemy(210);
+            play_snd(snd_scare, 0.9, 0.72);
+            show_msg("EMBOSCADA! A SALA ESTAVA OCUPADA", 160);
+            jumpscare = max(jumpscare, 12);
+            jumpscare_type = 3;
+            shake = max(shake, 7);
+        } else if (_roll < _ambush_limit + 22) {
+            blackout = max(blackout, irandom_range(75, 130));
+            if (array_length(enemies) < max_enemies) spawn_enemy(190);
+            play_snd(snd_blackout, 0.9, 0.82);
+            show_msg("OS GERADORES CAIRAM. TEM ALGO SE MOVENDO", 180);
+        } else if (_roll < _ambush_limit + 52) {
+            var _loot_type = (irandom(1) == 0) ? 1 : 2;
+            array_push(items, { x : (_entering.x + _entering.w * 0.5) * tile, y : (_entering.y + _entering.h * 0.5) * tile, type : _loot_type, timer : random(360) });
+            show_msg("CACHE ESQUECIDO DETECTADO. VALE A PENA ARRISCAR?", 180);
+        } else {
+            play_snd(snd_creak, 0.48, 0.55);
+            show_msg("A SALA ESTA VAZIA... MAS VOCE OUVIU UM SUSSURRO", 170);
+        }
+        break;
+    }
 }
 
 // Novos inimigos com o tempo
@@ -381,19 +449,7 @@ if (nearby_item != -1 && keyboard_check_pressed(ord("E"))) {
     switch (_it.type) {
         case 0:
             docs_got++;
-            player.xp++;
-            if (player.xp >= player.xp_next) {
-                player.xp -= player.xp_next;
-                player.rank++;
-                player.xp_next += 2;
-                player.hp_max += 8;
-                player.stamina_max += 5;
-                player.hp = min(player.hp_max, player.hp + 20);
-                player.stamina = player.stamina_max;
-                pontos += 250;
-                show_msg("NIVEL DE CAMPO " + string(player.rank) + "! VIDA E VIGOR AUMENTARAM", 210);
-                play_snd(snd_win, 0.5, 1.1);
-            }
+            gain_field_xp(1);
             combo = (combo_timer > 0) ? combo + 1 : 1;
             combo_timer = 60 * 18;
             var _gain = 100 * combo;
@@ -408,16 +464,8 @@ if (nearby_item != -1 && keyboard_check_pressed(ord("E"))) {
                 add_floater(_it.x, _it.y - 28, "MARCO! +VIDA +BATERIA +150", c_aqua);
                 play_snd(snd_win, 0.3, 1.25);
             }
-            show_msg("DOCUMENTO " + string(docs_got) + "/" + string(docs_total), 120);
-            if (docs_got >= docs_total) {
-                exit_open = true;
-                alarm_on = true;
-                var _ai = audio_play_sound(snd_alarm, 10, true);
-                audio_sound_gain(_ai, 0.35, 0);
-                show_msg("ALARME ATIVADO! FUJA PELA SAIDA VERDE!", 260);
-                shake = 12;
-                if (level == 1) spawn_enemy(420);
-            }
+            show_msg("DADOS RECUPERADOS " + string(docs_got) + "/" + string(docs_total), 120);
+            if (docs_got >= docs_total) complete_contract();
             break;
         case 1:
             player.hp = min(player.hp_max, player.hp + 35);
@@ -432,6 +480,17 @@ if (nearby_item != -1 && keyboard_check_pressed(ord("E"))) {
             play_snd(snd_pick, 0.6, 1.4);
             add_floater(_it.x, _it.y - 12, "+BATERIA", c_aqua);
             show_msg("Bateria recarregada", 90);
+            break;
+        case 3:
+        case 4:
+            docs_got++;
+            gain_field_xp(2);
+            pontos += 180 + round(current_zone.danger * 120);
+            _pcol = (_it.type == 3) ? c_orange : make_color_rgb(210, 80, 255);
+            play_snd(snd_pick, 0.8, (_it.type == 3) ? 0.8 : 1.35);
+            add_floater(_it.x, _it.y - 14, (_it.type == 3) ? "FUSIVEL + XP" : "RELIQUIA + XP", _pcol);
+            show_msg(objective_names[mission_type] + " " + string(docs_got) + "/" + string(docs_total), 130);
+            if (docs_got >= docs_total) complete_contract();
             break;
     }
     add_particles(_it.x, _it.y, 18, _pcol, 2);
