@@ -4,6 +4,8 @@ extends CharacterBody3D
 
 const MODELO: String = "res://assets/kenney_characters/characterMedium.fbx"
 const MAPA_ZUMBI: String = "res://assets/kenney_characters/zombieA.png"
+const ANIMACAO_IDLE: String = "res://assets/kenney_characters/idle.fbx"
+const ANIMACAO_CORRER: String = "res://assets/kenney_characters/run.fbx"
 const RAIO_PERCEPCAO: float = 28.0
 const VELOCIDADE_TIPO: Dictionary = {
 	"esvaziado": 1.85, "rastejante": 3.65, "estatua": 2.9, "sombra": 2.55
@@ -25,6 +27,9 @@ var _luz_olhos: OmniLight3D
 var _pulso: float = 0.0
 var _tempo_rede: float = 0.0
 var _morto: bool = false
+var _animacao: AnimationPlayer
+var _animacao_idle: StringName = &""
+var _animacao_corrida: StringName = &""
 
 
 func _ready() -> void:
@@ -49,8 +54,9 @@ func _physics_process(delta: float) -> void:
 	_ataque -= delta
 	if _modelo != null:
 		_pulso += delta * (3.8 if is_boss else 2.4)
-		_modelo.scale.y = (1.04 if is_boss else 1.0) + 0.045 * sin(_pulso)
-		_modelo.rotation.z = lerpf(_modelo.rotation.z, 0.07 * sin(_pulso * 0.5), 0.04)
+		_modelo.scale.y = (1.04 if is_boss else 1.0) + 0.018 * sin(_pulso)
+		_modelo.rotation.z = lerpf(_modelo.rotation.z, 0.025 * sin(_pulso * 0.5), 0.04)
+		_atualizar_animacao()
 	if not multiplayer.is_server():
 		return
 	_tempo_rede += delta
@@ -192,6 +198,20 @@ func _montar_visual() -> void:
 			corpo.scale = Vector3(1.06, 1.11, 1.06) if is_boss else Vector3(1.0, 0.98, 1.0)
 			_modelo.add_child(corpo)
 			_aplicar_textura(corpo)
+			_configurar_animacoes(corpo)
+			# Silhueta curvada e braços baixos; evita a pose T enquanto a animação carrega.
+			for no: Node in corpo.find_children("*", "Skeleton3D", true, false):
+				var esqueleto: Skeleton3D = no as Skeleton3D
+				for osso: int in range(esqueleto.get_bone_count()):
+					var nome_osso: String = esqueleto.get_bone_name(osso).to_lower()
+					if "arm" in nome_osso or "shoulder" in nome_osso:
+						esqueleto.set_bone_pose_rotation(
+							osso, Quaternion(Vector3.FORWARD, deg_to_rad(48.0))
+						)
+					elif "spine" in nome_osso or "chest" in nome_osso:
+						esqueleto.set_bone_pose_rotation(
+							osso, Quaternion(Vector3.RIGHT, deg_to_rad(-10.0))
+						)
 	var mat_olho: StandardMaterial3D = StandardMaterial3D.new()
 	mat_olho.albedo_color = Color(0.95, 0.04, 0.015)
 	mat_olho.emission_enabled = true
@@ -225,6 +245,47 @@ func _montar_visual() -> void:
 		nevoa.material_override = sombra
 		nevoa.position.y = 0.92
 		_modelo.add_child(nevoa)
+
+
+func _configurar_animacoes(corpo: Node3D) -> void:
+	_animacao = corpo.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	if _animacao == null:
+		return
+	var cena_idle: PackedScene = load(ANIMACAO_IDLE) as PackedScene
+	var cena_run: PackedScene = load(ANIMACAO_CORRER) as PackedScene
+	var idle_player: AnimationPlayer = (
+		cena_idle.instantiate().find_child("AnimationPlayer", true, false) as AnimationPlayer
+		if cena_idle != null else null
+	)
+	var run_player: AnimationPlayer = (
+		cena_run.instantiate().find_child("AnimationPlayer", true, false) as AnimationPlayer
+		if cena_run != null else null
+	)
+	if idle_player != null:
+		_animacao_idle = _copiar_animacao(idle_player, "idle")
+	if run_player != null:
+		_animacao_corrida = _copiar_animacao(run_player, "run")
+	if not _animacao_idle.is_empty():
+		_animacao.play(_animacao_idle)
+
+
+func _copiar_animacao(origem: AnimationPlayer, prefixo: String) -> StringName:
+	for nome: StringName in origem.get_animation_list():
+		var biblioteca: AnimationLibrary = origem.get_animation_library("")
+		var copia: Animation = biblioteca.get_animation(nome).duplicate() as Animation
+		var destino: StringName = StringName(prefixo + "_" + String(nome))
+		_animacao.get_animation_library("").add_animation(destino, copia)
+		return destino
+	return &""
+
+
+func _atualizar_animacao() -> void:
+	if _animacao == null:
+		return
+	var andando: bool = Vector2(velocity.x, velocity.z).length() > 0.35
+	var desejada: StringName = _animacao_corrida if andando else _animacao_idle
+	if not desejada.is_empty() and _animacao.current_animation != desejada:
+		_animacao.play(desejada, 0.18)
 
 
 func _aplicar_textura(no: Node) -> void:
