@@ -7719,7 +7719,7 @@ fire_gun = function() {
     if (_hit != -1) damage_enemy(_hit, _dmg);
     if (_hitboss) {
         var _m = 1;
-        if (boss.phase == 2 && !boss.lit) _m = 0.15;
+        if (!boss.lit) _m = 0.65; else _m = 1.25;
         boss.hp -= _dmg * _m;
         boss.flash = 6;
         add_particles(boss.x, boss.y, 8, make_color_rgb(255, 60, 60), 2.5);
@@ -7771,7 +7771,7 @@ unseal_arena = function() {
 };
 
 start_boss_fight = function() {
-    boss = { x : tc(107), y : tc(70), hp : 700, hpmax : 700, phase : 1, anim : 0, face : 90, cd : 120, pat : 0,
+    boss = { x : tc(107), y : tc(70), hp : 300, hpmax : 300, phase : 1, anim : 0, face : 90, cd : 120, pat : 0,
              dash : 0, dt : 0, dang : 0, tp : 200, flash : 0, lit : false, rad : 22 };
     seal_arena();
     var _ax = [97, 117, 97, 117, 97, 117];
@@ -7818,14 +7818,14 @@ update_boss = function() {
         if (_ad < flash_angle + 12 && los(player.x, player.y, _b.x, _b.y)) _b.lit = true;
     }
     if (_b.lit) {
-        _b.hp -= 0.30 * dmg_mult;
-        battery = max(0, battery - 0.02);
+        _b.hp -= 0.55 * dmg_mult;
+        battery = max(0, battery - 0.008);
         _b.flash = 2;
     }
 
     var _ph = 1;
-    if (_b.hp <= 470) _ph = 2;
-    if (_b.hp <= 220) _ph = 3;
+    if (_b.hp <= 200) _ph = 2;
+    if (_b.hp <= 90) _ph = 3;
     if (_ph != _b.phase) {
         _b.phase = _ph;
         shake = 18;
@@ -7852,7 +7852,8 @@ update_boss = function() {
 
     switch (_ph) {
         case 1:
-            if (_dist > 150) move_body(_b, lengthdir_x(0.85, _dirp), lengthdir_y(0.85, _dirp), 14);
+            if (_dist > 95) move_body(_b, lengthdir_x(1.0, _dirp), lengthdir_y(1.0, _dirp), 14);
+            else move_body(_b, lengthdir_x(-0.55, _dirp), lengthdir_y(-0.55, _dirp), 14);
             if (_b.cd <= 0) {
                 if (_b.pat == 0) boss_ring(14, 2.2, random(360), 12);
                 else { for (var a = -14; a <= 14; a += 14) boss_shot(_b.x, _b.y, _dirp + a, 3.2, 12); }

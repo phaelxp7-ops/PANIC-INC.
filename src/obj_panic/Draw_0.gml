@@ -198,19 +198,20 @@ if (mode == 1 && state != STATE_TITLE && state != STATE_INTRO) {
         draw_box3d(vb_npc_hair, _npc.x - _forward_x * 0.4, _npc.y - _forward_y * 0.4, 46 + _nb, 5.5, 5.0, 3.3, _nf);
         draw_box3d(vb_npc_hair, _npc.x - _forward_x * 2.4, _npc.y - _forward_y * 2.4, 40 + _nb, 3.0, 3.2, 9.0, _nf);
         for (var _face_eye = -1; _face_eye <= 1; _face_eye += 2) {
-            var _ex = _npc.x + _forward_x * 2.25 + _right_x * 1.05 * _face_eye;
-            var _ey = _npc.y + _forward_y * 2.25 + _right_y * 1.05 * _face_eye;
-            draw_box3d(vb_npc_eye, _ex, _ey, 43.5 + _nb, 0.72, 0.55, 0.75, _nf);
-            draw_box3d(vb_npc_brow, _ex + _forward_x * 0.12, _ey + _forward_y * 0.12, 44.6 + _nb, 1.05, 0.42, 0.38, _nf);
+            // Os olhos ficam um pouco a frente da superfície da cabeça para não sumirem na malha.
+            var _ex = _npc.x + _forward_x * 2.85 + _right_x * 1.05 * _face_eye;
+            var _ey = _npc.y + _forward_y * 2.85 + _right_y * 1.05 * _face_eye;
+            draw_box3d(vb_npc_eye, _ex, _ey, 43.5 + _nb, 0.92, 0.62, 0.78, _nf);
+            draw_box3d(vb_npc_brow, _ex + _forward_x * 0.34, _ey + _forward_y * 0.34, 44.6 + _nb, 1.18, 0.48, 0.38, _nf);
         }
-        draw_textured_box3d(vb_npc_skin, marta_tex_skin, _npc.x + _forward_x * 2.55, _npc.y + _forward_y * 2.55, 42.2 + _nb, 0.9, 0.8, 1.2, _nf);
-        draw_box3d(vb_npc_mouth, _npc.x + _forward_x * 2.32, _npc.y + _forward_y * 2.32, 40.7 + _nb, 1.15, 0.45, 0.55, _nf);
+        draw_textured_box3d(vb_npc_skin, marta_tex_skin, _npc.x + _forward_x * 3.05, _npc.y + _forward_y * 3.05, 42.2 + _nb, 0.9, 0.8, 1.2, _nf);
+        draw_box3d(vb_npc_mouth, _npc.x + _forward_x * 2.95, _npc.y + _forward_y * 2.95, 40.7 + _nb, 1.15, 0.45, 0.55, _nf);
 
         // Reflexo ocular sutil sob a lanterna, sem os olhos amarelos artificiais antigos.
         var _to_player = point_direction(_npc.x, _npc.y, player.x, player.y);
         if (flash_on && _dist_player < flash_len && abs(angle_difference(_nf, _to_player)) < 65) {
             for (var _flash_eye = -1; _flash_eye <= 1; _flash_eye += 2) {
-                draw_box3d(vb_eye, _npc.x + _forward_x * 2.65 + _right_x * 1.05 * _flash_eye, _npc.y + _forward_y * 2.65 + _right_y * 1.05 * _flash_eye, 43.5 + _nb, 0.28, 0.28, 0.28, 0);
+                draw_box3d(vb_eye, _npc.x + _forward_x * 3.2 + _right_x * 1.05 * _flash_eye, _npc.y + _forward_y * 3.2 + _right_y * 1.05 * _flash_eye, 43.5 + _nb, 0.3, 0.3, 0.3, 0);
             }
         }
     }
