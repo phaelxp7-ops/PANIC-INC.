@@ -54,8 +54,8 @@ func _physics_process(delta: float) -> void:
 	_ataque -= delta
 	if _modelo != null:
 		_pulso += delta * (3.8 if is_boss else 2.4)
-		_modelo.scale.y = (1.04 if is_boss else 1.0) + 0.018 * sin(_pulso)
-		_modelo.rotation.z = lerpf(_modelo.rotation.z, 0.025 * sin(_pulso * 0.5), 0.04)
+		_modelo.scale.y = (1.04 if is_boss else 1.0) + 0.012 * sin(_pulso)
+		_modelo.rotation.z = lerpf(_modelo.rotation.z, 0.018 * sin(_pulso * 0.5), 0.04)
 		_atualizar_animacao()
 	if not multiplayer.is_server():
 		return
@@ -204,14 +204,10 @@ func _montar_visual() -> void:
 				var esqueleto: Skeleton3D = no as Skeleton3D
 				for osso: int in range(esqueleto.get_bone_count()):
 					var nome_osso: String = esqueleto.get_bone_name(osso).to_lower()
+					# Não escreva rotações diretamente no Skeleton: isso sobrescrevia
+					# a pose importada e deixava o rig em T-pose/torções incorretas.
 					if "arm" in nome_osso or "shoulder" in nome_osso:
-						esqueleto.set_bone_pose_rotation(
-							osso, Quaternion(Vector3.FORWARD, deg_to_rad(48.0))
-						)
-					elif "spine" in nome_osso or "chest" in nome_osso:
-						esqueleto.set_bone_pose_rotation(
-							osso, Quaternion(Vector3.RIGHT, deg_to_rad(-10.0))
-						)
+						esqueleto.set_bone_pose_rotation(osso, Quaternion.IDENTITY)
 	var mat_olho: StandardMaterial3D = StandardMaterial3D.new()
 	mat_olho.albedo_color = Color(0.95, 0.04, 0.015)
 	mat_olho.emission_enabled = true
@@ -253,18 +249,24 @@ func _configurar_animacoes(corpo: Node3D) -> void:
 		return
 	var cena_idle: PackedScene = load(ANIMACAO_IDLE) as PackedScene
 	var cena_run: PackedScene = load(ANIMACAO_CORRER) as PackedScene
+	var idle_root: Node = cena_idle.instantiate() if cena_idle != null else null
+	var run_root: Node = cena_run.instantiate() if cena_run != null else null
 	var idle_player: AnimationPlayer = (
-		cena_idle.instantiate().find_child("AnimationPlayer", true, false) as AnimationPlayer
-		if cena_idle != null else null
+		idle_root.find_child("AnimationPlayer", true, false) as AnimationPlayer
+		if idle_root != null else null
 	)
 	var run_player: AnimationPlayer = (
-		cena_run.instantiate().find_child("AnimationPlayer", true, false) as AnimationPlayer
-		if cena_run != null else null
+		run_root.find_child("AnimationPlayer", true, false) as AnimationPlayer
+		if run_root != null else null
 	)
 	if idle_player != null:
 		_animacao_idle = _copiar_animacao(idle_player, "idle")
 	if run_player != null:
 		_animacao_corrida = _copiar_animacao(run_player, "run")
+	if idle_root != null:
+		idle_root.free()
+	if run_root != null:
+		run_root.free()
 	if not _animacao_idle.is_empty():
 		_animacao.play(_animacao_idle)
 
@@ -274,7 +276,13 @@ func _copiar_animacao(origem: AnimationPlayer, prefixo: String) -> StringName:
 		var biblioteca: AnimationLibrary = origem.get_animation_library("")
 		var copia: Animation = biblioteca.get_animation(nome).duplicate() as Animation
 		var destino: StringName = StringName(prefixo + "_" + String(nome))
-		_animacao.get_animation_library("").add_animation(destino, copia)
+		var biblioteca_destino: AnimationLibrary = _animacao.get_animation_library("")
+		if biblioteca_destino == null:
+			biblioteca_destino = AnimationLibrary.new()
+			_animacao.add_animation_library("", biblioteca_destino)
+		if biblioteca_destino.has_animation(destino):
+			biblioteca_destino.remove_animation(destino)
+		biblioteca_destino.add_animation(destino, copia)
 		return destino
 	return &""
 
