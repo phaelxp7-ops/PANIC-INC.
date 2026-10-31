@@ -38,3 +38,5 @@ Os recursos da Poly Haven são CC0; a licença está em https://polyhaven.com/li
 
 As licenças CC0 permitem uso sem atribuição; as fontes ficam registradas aqui
 para rastreabilidade do projeto.
+
+- materials/cabin_floor_atlas.jpg: 16 variações de piso de tábuas gastas, sintetizadas sobre a textura CC0 da casca de pinheiro e usadas apenas dentro da cabana. uild_materials.py regenera o atlas e mbed_materials.py o incorpora ao Create do objeto.

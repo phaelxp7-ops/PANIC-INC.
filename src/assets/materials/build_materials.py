@@ -2,7 +2,7 @@
 from pathlib import Path
 import random
 
-from PIL import Image, ImageEnhance, ImageOps
+from PIL import Image, ImageDraw, ImageEnhance, ImageOps
 
 ROOT = Path(__file__).resolve().parent
 ASSETS = ROOT.parent
@@ -77,6 +77,36 @@ def build_bark_atlas() -> None:
     atlas.save(ROOT / "pine_bark_atlas.jpg", quality=86, optimize=True, progressive=False)
 
 
+def build_cabin_floor_atlas() -> None:
+    """Build a 4x4 set of worn wood-plank tiles for cabin floors."""
+    source = Image.open(POLY / "pine_bark_diff_1k.jpg").convert("RGB")
+    atlas = Image.new("RGB", (512, 512), (37, 25, 17))
+    rng = random.Random(712)
+    for variant in range(16):
+        tile = Image.new("RGB", (128, 128), (52, 35, 23))
+        draw = ImageDraw.Draw(tile)
+        for row in range(4):
+            y = row * 32
+            cx = rng.uniform(0.2, 0.8)
+            cy = rng.uniform(0.15, 0.85)
+            patch = ImageOps.fit(source, (128, 32), centering=(cx, cy), method=Image.Resampling.LANCZOS)
+            patch = ImageEnhance.Color(patch).enhance(0.68)
+            patch = ImageEnhance.Brightness(patch).enhance(rng.uniform(0.52, 0.72))
+            tile.paste(patch, (0, y))
+            # Board seams, end joints and subtle scratches make the cabin read as timber.
+            draw.line((0, y, 127, y), fill=(23, 16, 12), width=2)
+            seam = rng.randrange(32, 97)
+            draw.line((seam, y + 3, seam, y + 30), fill=(30, 20, 14), width=2)
+            for _ in range(7):
+                gx = rng.randrange(128)
+                gy = y + rng.randrange(4, 29)
+                draw.line((gx, gy, min(127, gx + rng.randrange(7, 30)), gy),
+                          fill=(rng.randrange(38, 60), rng.randrange(25, 40), rng.randrange(16, 27)), width=1)
+        draw.line((0, 127, 127, 127), fill=(23, 16, 12), width=2)
+        atlas.paste(tile, ((variant % 4) * 128, (variant // 4) * 128))
+    atlas.save(ROOT / "cabin_floor_atlas.jpg", quality=90, optimize=True, progressive=False)
+
+
 def build_monster_atlas() -> None:
     source = Image.open(OGA / "Organic_Matter_002_COLOR.jpg").convert("RGB")
     # One dark, irregular organic surface; each creature gets its own restrained horror palette.
@@ -130,6 +160,7 @@ def build_marta_maps() -> None:
 
 build_world_atlas()
 build_bark_atlas()
+build_cabin_floor_atlas()
 build_monster_atlas()
 build_marta_maps()
 print(f"Generated compact GameMaker materials in {ROOT}")

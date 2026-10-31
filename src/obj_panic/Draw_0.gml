@@ -25,9 +25,10 @@ if (mode == 1 && state != STATE_TITLE && state != STATE_INTRO) {
     if (sanity < 30) _fog_end *= 0.8;
     var _fog_col = (cur_biome == 0) ? make_color_rgb(10, 19, 15) : make_color_rgb(13, 16, 23);
     gpu_set_fog(true, _fog_col, 45, max(120, _fog_end));
-    for (var _gb = 0; _gb < 4; _gb++) {
+    for (var _gb = 0; _gb < array_length(vb_floor); _gb++) {
         if (array_length(vb_floor) > _gb && vb_floor[_gb] != -1) {
-            vertex_submit(vb_floor[_gb], pr_trianglelist, sprite_get_texture(world_surface_tex, 0));
+            var _floor_tex = (_gb == 4) ? cabin_floor_tex : world_surface_tex;
+            vertex_submit(vb_floor[_gb], pr_trianglelist, sprite_get_texture(_floor_tex, 0));
         }
     }
     vertex_submit(vb_world, pr_trianglelist, -1);
@@ -47,7 +48,7 @@ if (mode == 1 && state != STATE_TITLE && state != STATE_INTRO) {
         }
     }
 
-    // Criaturas com mapas de pele distintos, focinho, cavidade oral, garras e silhuetas próprias.
+    // Criaturas com mapas de pele distintos, focinho, cavidade oral, garras e silhuetas prÃ³prias.
     for (var i = 0; i < array_length(enemies); i++) {
         var _en = enemies[i];
         if (point_distance(_en.x, _en.y, player.x, player.y) > 500) continue;
@@ -60,7 +61,7 @@ if (mode == 1 && state != STATE_TITLE && state != STATE_INTRO) {
         var _width = en_w[_type];
         var _skin_vb = vb_enemy_skin[_type];
         if (_type == 1) {
-            // O Rastejante arrasta o tórax e abre uma mandíbula larga antes do bote.
+            // O Rastejante arrasta o tÃ³rax e abre uma mandÃ­bula larga antes do bote.
             var _lunge = _en.mode == 1 ? 5 + abs(sin(_en.anim * 0.28)) * 7 : 0;
             draw_textured_box3d(_skin_vb, monster_skin_tex, _en.x, _en.y, 10 + _bob, (29 + _lunge) * _breath, 16, 10, _turn);
             draw_textured_box3d(_skin_vb, monster_skin_tex, _en.x + lengthdir_x(17 + _lunge, _turn), _en.y + lengthdir_y(17 + _lunge, _turn), 13 + _bob, 12, 9, 8, _turn);
@@ -86,7 +87,7 @@ if (mode == 1 && state != STATE_TITLE && state != STATE_INTRO) {
             }
         } else {
             var _torso_w = (_type == 2) ? _width * 1.12 : _width * 1.55;
-            // Tórax, abdômen e ombros separados formam uma silhueta orgânica, não um bloco único.
+            // TÃ³rax, abdÃ´men e ombros separados formam uma silhueta orgÃ¢nica, nÃ£o um bloco Ãºnico.
             draw_textured_box3d(_skin_vb, monster_skin_tex, _en.x, _en.y, _height * 0.43 + _bob, _torso_w * _breath, _width * 0.9, _height * 0.82, _turn);
             draw_textured_box3d(_skin_vb, monster_skin_tex, _en.x - lengthdir_x(2, _turn), _en.y - lengthdir_y(2, _turn), _height * 0.25 + _bob, _torso_w * 0.72, _width * 0.82, _height * 0.40, _turn);
             for (var _shoulder = -1; _shoulder <= 1; _shoulder += 2) {
@@ -94,7 +95,7 @@ if (mode == 1 && state != STATE_TITLE && state != STATE_INTRO) {
                 var _shoulder_y = _en.y + lengthdir_y(8 * _shoulder, _turn + 90);
                 draw_textured_box3d(_skin_vb, monster_skin_tex, _shoulder_x, _shoulder_y, _height * 0.68 + _bob, _type == 2 ? 7 : 9, 7, 8, _turn + 10 * _shoulder);
             }
-            // Cabeça alongada, boca funda e olhos recuados mudam a leitura da silhueta.
+            // CabeÃ§a alongada, boca funda e olhos recuados mudam a leitura da silhueta.
             var _head_x = _en.x + lengthdir_x(_type == 2 ? 7 : 5, _turn);
             var _head_y = _en.y + lengthdir_y(_type == 2 ? 7 : 5, _turn);
             draw_textured_box3d(_skin_vb, monster_skin_tex, _head_x, _head_y, _height * 0.84 + _bob, _type == 3 ? 9 : 10, 8, _type == 3 ? 19 : 13, _turn);
@@ -136,7 +137,7 @@ if (mode == 1 && state != STATE_TITLE && state != STATE_INTRO) {
                 for (var _fang = -1; _fang <= 1; _fang += 2) draw_box3d(vb_claw, _face_x + lengthdir_x(5, _turn) + lengthdir_x(2.0 * _fang, _turn + 90), _face_y + lengthdir_y(5, _turn) + lengthdir_y(2.0 * _fang, _turn + 90), _height * 0.69 + _bob, 1.0, 1.0, 3.6, _turn);
             }
             if (_type == 2) {
-                // A Estátua é alta, sem expressão, e dobra os braços como galhos quebrados.
+                // A EstÃ¡tua Ã© alta, sem expressÃ£o, e dobra os braÃ§os como galhos quebrados.
                 for (var _horn = -1; _horn <= 1; _horn += 2) {
                     draw_box3d(vb_spike, _head_x + lengthdir_x(3.8 * _horn, _turn + 90), _head_y + lengthdir_y(3.8 * _horn, _turn + 90), _height + 8 + _bob, 3.6, 3.6, 16, _turn + 20 * _horn);
                 }
@@ -168,12 +169,12 @@ if (mode == 1 && state != STATE_TITLE && state != STATE_INTRO) {
         var _right_x = lengthdir_x(1, _nf + 90); var _right_y = lengthdir_y(1, _nf + 90);
 
         // Marta: silhueta humana mais estreita, com pernas, roupa, mangas e rosto separados.
-        // As texturas de camiseta, jeans e pele vêm dos materiais CC0 empacotados no Create.
+        // As texturas de camiseta, jeans e pele vÃªm dos materiais CC0 empacotados no Create.
         draw_textured_box3d(vb_npc_denim, marta_tex_denim, _npc.x, _npc.y, 20 + _nb, 7.2, 4.2, 6.5, _nf);
         draw_textured_box3d(vb_npc_shirt, marta_tex_shirt, _npc.x, _npc.y, 27 + _nb, 8.2, 4.6, 10.5, _nf);
         draw_textured_box3d(vb_npc_shirt, marta_tex_shirt, _npc.x, _npc.y, 33 + _nb, 9.3, 4.8, 5.3, _nf);
 
-        // Mochila curta e alças distinguem a sobrevivente sem alargar o torso.
+        // Mochila curta e alÃ§as distinguem a sobrevivente sem alargar o torso.
         draw_box3d(vb_npc_pack, _npc.x - _forward_x * 3.2, _npc.y - _forward_y * 3.2, 28 + _nb, 4.5, 2.2, 8.5, _nf);
         draw_box3d(vb_npc_scarf, _npc.x, _npc.y, 36 + _nb, 3.6, 3.7, 2.0, _nf);
 
@@ -192,13 +193,13 @@ if (mode == 1 && state != STATE_TITLE && state != STATE_INTRO) {
             draw_textured_box3d(vb_npc_skin, marta_tex_skin, _sx + _right_x * 0.3 * _side, _sy + _right_y * 0.3 * _side, 15.5 + _nb + _walk * _side, 1.9, 2.15, 4.0, _nf);
         }
 
-        // Pescoço, cabeça oval, cabelo preso e traços faciais visíveis de frente.
+        // PescoÃ§o, cabeÃ§a oval, cabelo preso e traÃ§os faciais visÃ­veis de frente.
         draw_textured_box3d(vb_npc_skin, marta_tex_skin, _npc.x, _npc.y, 37.8 + _nb, 2.6, 2.7, 3.3, _nf);
         draw_textured_box3d(vb_npc_skin, marta_tex_skin, _npc.x + _forward_x * 0.2, _npc.y + _forward_y * 0.2, 43 + _nb, 5.0, 4.5, 6.6, _nf);
         draw_box3d(vb_npc_hair, _npc.x - _forward_x * 0.4, _npc.y - _forward_y * 0.4, 46 + _nb, 5.5, 5.0, 3.3, _nf);
         draw_box3d(vb_npc_hair, _npc.x - _forward_x * 2.4, _npc.y - _forward_y * 2.4, 40 + _nb, 3.0, 3.2, 9.0, _nf);
         for (var _face_eye = -1; _face_eye <= 1; _face_eye += 2) {
-            // Os olhos ficam um pouco a frente da superfície da cabeça para não sumirem na malha.
+            // Os olhos ficam um pouco a frente da superfÃ­cie da cabeÃ§a para nÃ£o sumirem na malha.
             var _ex = _npc.x + _forward_x * 2.85 + _right_x * 1.05 * _face_eye;
             var _ey = _npc.y + _forward_y * 2.85 + _right_y * 1.05 * _face_eye;
             draw_box3d(vb_npc_eye, _ex, _ey, 43.5 + _nb, 0.92, 0.62, 0.78, _nf);
@@ -216,13 +217,13 @@ if (mode == 1 && state != STATE_TITLE && state != STATE_INTRO) {
         }
     }
 
-    // O Diretor usa a pele mais escura do atlas, com veios e núcleo pulsante.
+    // O Diretor usa a pele mais escura do atlas, com veios e nÃºcleo pulsante.
     if (boss != -1) {
         var _pulse = 1 + 0.06 * sin(boss.anim * 0.12);
         var _boss_sway = sin(boss.anim * 0.08) * 3;
         var _boss_fx = lengthdir_x(1, boss.face); var _boss_fy = lengthdir_y(1, boss.face);
         var _boss_rx = lengthdir_x(1, boss.face + 90); var _boss_ry = lengthdir_y(1, boss.face + 90);
-        // Silhueta assimétrica: caixa torácica, cabeça afundada e braços quase no chão.
+        // Silhueta assimÃ©trica: caixa torÃ¡cica, cabeÃ§a afundada e braÃ§os quase no chÃ£o.
         draw_textured_box3d(vb_enemy_skin[3], monster_skin_tex, boss.x, boss.y, 37, 52 * _pulse, 42, 68 * _pulse, boss.face);
         draw_textured_box3d(vb_enemy_skin[3], monster_skin_tex, boss.x + _boss_fx * 3, boss.y + _boss_fy * 3, 83 + _boss_sway, 28, 27, 31, boss.face);
         for (var s = -1; s <= 1; s += 2) {

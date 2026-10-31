@@ -24,6 +24,7 @@ block = "\n".join([
     gml_data_url("marta_tex_denim", ROOT / "marta_denim.jpg"),
     gml_data_url("marta_tex_skin", ROOT / "marta_skin.jpg"),
     gml_data_url("world_surface_tex", MATERIALS / "world_surface_atlas.jpg"),
+    gml_data_url("cabin_floor_tex", MATERIALS / "cabin_floor_atlas.jpg"),
     gml_data_url("monster_skin_tex", MATERIALS / "monster_skin_atlas.jpg"),
     gml_data_url("pine_bark_tex", MATERIALS / "pine_bark_atlas.jpg"),
     END,

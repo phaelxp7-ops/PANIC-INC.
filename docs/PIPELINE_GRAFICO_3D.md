@@ -33,3 +33,7 @@ Substituir gradualmente a geometria feita de esferas/caixas por personagens e am
 
 ## Limite atual
 O renderizador 3D deste protótipo é desenhado manualmente em GML e o repositório não inclui `.yyp` nem modelos rigados. Texturas melhores ajudam, mas não convertem esferas em personagens AAA. O salto real depende de importar malhas, rig e animações no projeto GameMaker e adaptar o renderer para elas. Este pipeline prepara as pastas e o processo sem fingir que a importação já ocorreu.
+
+## Execução local
+
+Na raiz do checkout, rode python src/assets/materials/build_materials.py e depois python src/assets/marta_materials/embed_materials.py. Isso regenera os atlases e os incorpora ao evento Create do protótipo. O chão de biomas auxiliares agora usa o material de floresta; o interior da cabana tem um atlas próprio de tábuas para não herdar o solo da mata. Para qualquer nova textura, valide primeiro a repetição na escala de 32 unidades por tile e confira a região interna e externa da mesma estrutura.
