@@ -67,6 +67,23 @@ if (mode == 1) {
             draw_box3d(vb_hd[3], _en.x, _en.y, _hgt * 0.67 + _bz, 9, 3, 4, _turn);
             draw_box3d(vb_body[3], _en.x + lengthdir_x(9, _turn + 90), _en.y + lengthdir_y(9, _turn + 90), _hgt * 0.56 + _bz, 3, 4, _hgt * 0.78, _turn + 8);
             draw_box3d(vb_body[3], _en.x - lengthdir_x(9, _turn + 90), _en.y - lengthdir_y(9, _turn + 90), _hgt * 0.56 + _bz, 3, 4, _hgt * 0.78, _turn - 8);
+            draw_box3d(vb_spike, _en.x - lengthdir_x(4, _turn + 90), _en.y - lengthdir_y(4, _turn + 90), _hgt + 11 + _bz, 5, 5, 17, _turn - 14);
+            draw_box3d(vb_spike, _en.x + lengthdir_x(4, _turn + 90), _en.y + lengthdir_y(4, _turn + 90), _hgt + 11 + _bz, 5, 5, 17, _turn + 14);
+        }
+    }
+
+    // Silhueta do sobrevivente. A roupa so fica vermelha quando a traicao e revelada.
+    for (var n = 0; n < array_length(npcs); n++) {
+        var _npc = npcs[n];
+        if (point_distance(_npc.x, _npc.y, player.x, player.y) > 420) continue;
+        var _nbob = sin(current_time / 180 + _npc.anim) * 1.2;
+        var _npc_torso = _npc.revealed ? vb_npc_traitor : vb_npc_body;
+        draw_box3d(_npc_torso, _npc.x, _npc.y, 13 + _nbob, 12, 10, 24, _npc.face);
+        draw_box3d(vb_npc_head, _npc.x, _npc.y, 30 + _nbob, 9, 9, 11, _npc.face);
+        draw_box3d(_npc_torso, _npc.x + lengthdir_x(8, _npc.face + 90), _npc.y + lengthdir_y(8, _npc.face + 90), 15 + _nbob, 4, 4, 17, _npc.face + 6);
+        draw_box3d(_npc_torso, _npc.x - lengthdir_x(8, _npc.face + 90), _npc.y - lengthdir_y(8, _npc.face + 90), 15 + _nbob, 4, 4, 17, _npc.face - 6);
+        if (_npc.revealed) {
+            draw_box3d(vb_eye_watcher, _npc.x + lengthdir_x(5, _npc.face), _npc.y + lengthdir_y(5, _npc.face), 32 + _nbob, 2, 2, 2, 0);
         }
     }
 
@@ -355,6 +372,25 @@ for (var i = 0; i < array_length(enemies); i++) {
         draw_circle(_third_eye_x, _third_eye_y, 3, false);
     }
     draw_set_alpha(1);
+}
+
+// NPCs tambem tem silhueta propria na camera 2D e um marcador para chamar atencao.
+for (var n = 0; n < array_length(npcs); n++) {
+    var _npc2 = npcs[n];
+    var _nc_npc = floor(_npc2.x / tile);
+    var _nr_npc = floor(_npc2.y / tile);
+    if (!vis[_nc_npc][_nr_npc]) continue;
+    var _npc_col = _npc2.revealed ? c_red : c_aqua;
+    draw_set_color(c_black);
+    draw_ellipse(_npc2.x - 9, _npc2.y + 3, _npc2.x + 9, _npc2.y + 11, false);
+    draw_set_color(_npc_col);
+    draw_ellipse(_npc2.x - 6, _npc2.y - 6, _npc2.x + 6, _npc2.y + 7, false);
+    draw_set_color(make_color_rgb(205, 175, 145));
+    draw_circle(_npc2.x, _npc2.y - 4, 3.5, false);
+    if (!_npc2.used) {
+        draw_set_color(c_yellow);
+        draw_text(_npc2.x - 3, _npc2.y - 23, "?");
+    }
 }
 
 // ---------- LAMPADAS (brilho aditivo) ----------
