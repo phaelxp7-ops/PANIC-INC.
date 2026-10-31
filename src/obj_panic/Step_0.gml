@@ -243,7 +243,8 @@ if (mode == 0) {
     if (window_has_focus()) {
         var _wcx = window_get_width() / 2;
         var _wcy = window_get_height() / 2;
-        player.facing_dir -= (window_mouse_get_x() - _wcx) * mouse_sens;
+        // Mouse para a direita deve girar a camera para a direita.
+        player.facing_dir += (window_mouse_get_x() - _wcx) * mouse_sens;
         camera_pitch = clamp(camera_pitch - (window_mouse_get_y() - _wcy) * mouse_sens, -30, 30);
         window_mouse_set(_wcx, _wcy);
     }
@@ -719,4 +720,5 @@ if (player.hp <= 0) {
     play_snd(snd_growl, 1, 0.6);
     state = STATE_GAMEOVER;
 }
+
 
