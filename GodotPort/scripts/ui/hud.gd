@@ -17,6 +17,7 @@ var barra_sanidade: ProgressBar
 var barra_stamina: ProgressBar
 var barra_bateria: ProgressBar
 var barra_chefe: ProgressBar
+var label_chefe: Label
 var painel_dialogo: PanelContainer
 var painel_diario: PanelContainer
 var painel_mapa: PanelContainer
@@ -84,9 +85,10 @@ func _process(delta: float) -> void:
 		label_regiao.text = zona
 	var chefe: PanicMonster = mundo._chefe if mundo != null else null
 	barra_chefe.visible = chefe != null and is_instance_valid(chefe)
+	label_chefe.visible = barra_chefe.visible
 	if barra_chefe.visible:
 		barra_chefe.value = 100.0 * chefe.vida / 280.0
-		barra_chefe.get_node("../NomeChefe").text = "O DIRETOR   •   FASE %d" % chefe.fase
+		label_chefe.text = "O DIRETOR   •   FASE %d" % chefe.fase
 	var intensidade: float = 0.0
 	if jogador != null:
 		intensidade = 1.0 - clampf(jogador.sanidade / 100.0, 0.0, 1.0)
@@ -154,13 +156,14 @@ func _criar_interface() -> void:
 	label_notas.name = "ResumoNotas"
 	label_notas.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	coluna_info.add_child(label_notas)
-	var nome_boss: Label = _label("O DIRETOR", 17, Color(1.0, 0.24, 0.20))
-	nome_boss.name = "NomeChefe"
-	nome_boss.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	root.add_child(nome_boss)
-	nome_boss.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	nome_boss.position = Vector2(-200, 83)
-	nome_boss.size = Vector2(400, 26)
+	label_chefe = _label("O DIRETOR", 17, Color(1.0, 0.24, 0.20))
+	label_chefe.name = "NomeChefe"
+	label_chefe.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label_chefe.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	label_chefe.position = Vector2(-200, 83)
+	label_chefe.size = Vector2(400, 26)
+	label_chefe.visible = false
+	root.add_child(label_chefe)
 	barra_chefe = ProgressBar.new()
 	barra_chefe.max_value = 100.0
 	barra_chefe.set_anchors_preset(Control.PRESET_CENTER_TOP)

@@ -36,6 +36,10 @@ var _sistema_audio: AudioStreamPlayer3D
 
 
 func _ready() -> void:
+	if peer_id == 1:
+		# Começa olhando para a cabana de Marta, no leste da floresta.
+		_yaw = -PI * 0.5
+		rotation.y = _yaw
 	add_to_group("players")
 	_montar_colisao()
 	_montar_personagem()
@@ -355,14 +359,15 @@ func _montar_camera_e_lanterna() -> void:
 	pivot_camera.rotation.x = _pitch
 	add_child(pivot_camera)
 	camera = Camera3D.new()
-	camera.name = "CameraTerceiraPessoa"
-	camera.position = Vector3(0.9, 0.45, 5.8)
+	camera.name = "CameraPrimeiraPessoa"
+	camera.position = Vector3(0.0, 0.0, 0.04)
 	camera.fov = 72.0
 	camera.near = 0.08
 	camera.far = 180.0
 	if world != null and world._ambiente != null:
 		camera.environment = world._ambiente.environment
 	pivot_camera.add_child(camera)
+	_visual.visible = false
 	var ponto: Node3D = Node3D.new()
 	ponto.position = Vector3(0.23, -0.12, -0.12)
 	pivot_camera.add_child(ponto)

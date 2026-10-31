@@ -28,11 +28,11 @@ window/stretch/mode="canvas_items"
 physics_engine="Jolt Physics"
 
 [rendering]
-renderer/rendering_method="forward_plus"
+renderer/rendering_method="mobile"
 renderer/rendering_method.mobile="mobile"
 textures/default_filters/use_nearest_mipmap_filter=false
 environment/defaults/default_clear_color=Color(0.012, 0.018, 0.026, 1)
-lights_and_shadows/use_physical_light_units=true
+lights_and_shadows/use_physical_light_units=false
 
 [audio]
 default_bus_layout="res://resources/audio/default_bus_layout.tres"

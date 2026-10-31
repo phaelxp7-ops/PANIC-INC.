@@ -54,7 +54,7 @@ func _material_solo() -> StandardMaterial3D:
 	material.roughness = 0.94
 	material.metallic = 0.0
 	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
-	material.uv1_scale = Vector3(54.0, 54.0, 1.0)
+	material.uv1_scale = Vector3(16.0, 16.0, 1.0)
 	var caminho: String = "res://assets/polyhaven/forrest_ground_03_diff_1k.jpg"
 	if region_id == "city":
 		caminho = "res://assets/polyhaven/concrete_floor_diff_1k.jpg"
@@ -66,19 +66,19 @@ func _material_solo() -> StandardMaterial3D:
 		material.albedo_texture = load(caminho) as Texture2D
 	match region_id:
 		"forest":
-			material.albedo_color = Color(0.78, 0.86, 0.76)
+			material.albedo_color = Color(0.30, 0.36, 0.27)
 		"city":
-			material.albedo_color = Color(0.82, 0.78, 0.71)
+			material.albedo_color = Color(0.43, 0.40, 0.34)
 		"complex":
-			material.albedo_color = Color(0.78, 0.84, 0.88)
+			material.albedo_color = Color(0.40, 0.44, 0.46)
 		_:
-			material.albedo_color = Color(0.88, 0.58, 0.52)
+			material.albedo_color = Color(0.48, 0.30, 0.27)
 	return material
 
 
 func _montar_cenario() -> void:
 	if region_id == "forest":
-		_espalhar_multimesh(CENA_ARVORE, Settings.densidade_vegetacao(125), 53.0, 1.0, 2.4)
+		_plantar_pinheiros()
 		_espalhar_multimesh(CENA_ROCHA, Settings.densidade_vegetacao(30), 50.0, 0.7, 2.3)
 		_montar_cabana(centro + Vector3(-55, 0, 8), "Cabana de Marta", Color(0.24, 0.15, 0.10))
 		_montar_cabana(centro + Vector3(55, 0, -40), "Estação Florestal", Color(0.27, 0.20, 0.14))
@@ -300,7 +300,13 @@ func _espalhar_multimesh(
 			continue
 		var multi: MultiMesh = MultiMesh.new()
 		multi.transform_format = MultiMesh.TRANSFORM_3D
-		multi.mesh = malha.mesh
+		multi.mesh = malha.mesh.duplicate() as Mesh
+		# Cenas GLB podem guardar o material como override no MeshInstance;
+		# copiar só o Mesh deixa a vegetação branca ou invisível no MultiMesh.
+		for superficie: int in range(malha.mesh.get_surface_count()):
+			var material_superficie: Material = malha.get_active_material(superficie)
+			if material_superficie != null:
+				multi.mesh.surface_set_material(superficie, material_superficie)
 		var total: int = mini(por_tipo, quantidade - tipo * por_tipo)
 		multi.instance_count = maxi(total, 0)
 		for i: int in range(multi.instance_count):
@@ -317,6 +323,69 @@ func _espalhar_multimesh(
 		repetidor.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 		add_child(repetidor)
 		instancia.free()
+
+
+func _plantar_pinheiros() -> void:
+	# Folhagem explícita em tons de pinheiro; os GLBs de referência apareciam
+	# brancos no driver integrado, por isso a floresta usa meshes leves próprios.
+	var posicoes: Array[Vector3] = []
+	var escalas: Array[float] = []
+	var quantidade: int = Settings.densidade_vegetacao(100)
+	for i: int in range(quantidade):
+		var x: float = _rng.randf_range(-106.0, 106.0)
+		var z: float = _rng.randf_range(-83.0, 83.0)
+		# Deixa livre o caminho entre o ponto inicial e a cabana de Marta.
+		if Vector2(x, z).distance_to(Vector2(-67.0, 5.0)) < 15.0:
+			continue
+		posicoes.append(centro + Vector3(x, 0.0, z))
+		escalas.append(_rng.randf_range(0.78, 1.42))
+	for i: int in range(14):
+		var x_trilha: float = -79.0 + float(i) * 10.5
+		var lado: float = -1.0 if i % 2 == 0 else 1.0
+		posicoes.append(centro + Vector3(x_trilha, 0.0, 5.0 + lado * _rng.randf_range(17.0, 23.0)))
+		escalas.append(_rng.randf_range(0.85, 1.25))
+
+	var tronco: CylinderMesh = CylinderMesh.new()
+	tronco.top_radius = 0.17
+	tronco.bottom_radius = 0.27
+	tronco.height = 3.0
+	tronco.radial_segments = 7
+	_adicionar_camada_pinheiros(tronco, _mat(Color(0.20, 0.105, 0.062)), posicoes, escalas, 1.5)
+	var cores: Array[Color] = [
+		Color(0.035, 0.115, 0.067), Color(0.045, 0.155, 0.082), Color(0.065, 0.19, 0.10)
+	]
+	var alturas: Array[float] = [2.5, 3.55, 4.45]
+	var raios: Array[float] = [1.65, 1.25, 0.87]
+	for camada: int in range(3):
+		var copa: CylinderMesh = CylinderMesh.new()
+		copa.top_radius = 0.0
+		copa.bottom_radius = raios[camada]
+		copa.height = 3.0 - float(camada) * 0.28
+		copa.radial_segments = 7
+		_adicionar_camada_pinheiros(
+			copa, _mat(cores[camada]), posicoes, escalas, alturas[camada]
+		)
+
+
+func _adicionar_camada_pinheiros(
+	malha: Mesh, material: Material, posicoes: Array[Vector3], escalas: Array[float], altura: float
+) -> void:
+	var multimesh: MultiMesh = MultiMesh.new()
+	multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	multimesh.mesh = malha
+	multimesh.instance_count = posicoes.size()
+	for i: int in range(posicoes.size()):
+		var escala: float = escalas[i]
+		var base: Vector3 = posicoes[i] + Vector3.UP * altura * escala
+		var transformacao: Transform3D = Transform3D(
+			Basis(Vector3.UP, _rng.randf_range(0.0, TAU)).scaled(Vector3.ONE * escala), base
+		)
+		multimesh.set_instance_transform(i, transformacao)
+	var instancia: MultiMeshInstance3D = MultiMeshInstance3D.new()
+	instancia.multimesh = multimesh
+	instancia.material_override = material
+	instancia.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	add_child(instancia)
 
 
 func _procurar_malha(no: Node) -> MeshInstance3D:

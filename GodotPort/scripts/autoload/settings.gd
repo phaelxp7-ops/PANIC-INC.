@@ -37,38 +37,29 @@ func salvar() -> void:
 
 
 func aplicar_qualidade() -> void:
-	var escala: float = (
-		0.72
-		if qualidade == "Baixo"
-		else (0.85 if qualidade == "Médio" else (1.0 if qualidade == "Alto" else 1.15))
-	)
-	get_viewport().scaling_3d_scale = minf(escala, 1.0)
+	# Mantém a cena 3D na resolução nativa: FSR em algumas GPUs integradas AMD
+	# estava produzindo viewport branco/artefatos em vez de reduzir resolução.
+	get_viewport().scaling_3d_scale = 1.0
 	get_viewport().msaa_3d = (
 		Viewport.MSAA_2X if qualidade in ["Alto", "Épico"] else Viewport.MSAA_DISABLED
 	)
 	get_viewport().screen_space_aa = (
 		Viewport.SCREEN_SPACE_AA_FXAA if qualidade != "Baixo" else Viewport.SCREEN_SPACE_AA_DISABLED
 	)
-	if qualidade == "Baixo":
-		# FSR no renderer OpenGL Compatibility pode falhar em GPUs integradas;
-		# o preset mínimo usa bilinear para manter o viewport previsível.
-		get_viewport().scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
-	elif qualidade == "Épico":
-		get_viewport().scaling_3d_mode = Viewport.SCALING_3D_MODE_FSR2
-	else:
-		get_viewport().scaling_3d_mode = Viewport.SCALING_3D_MODE_FSR
+	get_viewport().scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
 	var ambiente: WorldEnvironment = (
 		get_tree().get_first_node_in_group("ambiente_global") as WorldEnvironment
 	)
 	if ambiente == null or ambiente.environment == null:
 		return
 	var env: Environment = ambiente.environment
-	var avancado: bool = qualidade in ["Alto", "Épico"]
-	env.volumetric_fog_enabled = avancado
-	env.ssao_enabled = avancado
-	env.ssil_enabled = qualidade == "Épico"
-	env.sdfgi_enabled = qualidade == "Épico"
-	env.glow_enabled = qualidade != "Baixo"
+	# Evita pós-processamento caro e instável no driver integrado; atmosfera
+	# fica a cargo da neblina de profundidade simples do WorldEnvironment.
+	env.volumetric_fog_enabled = false
+	env.ssao_enabled = false
+	env.ssil_enabled = false
+	env.sdfgi_enabled = false
+	env.glow_enabled = false
 	var mundo: Node3D = get_tree().get_first_node_in_group("mundo_principal") as Node3D
 	if mundo != null:
 		for luz: Node in mundo.find_children("*", "DirectionalLight3D", true, false):

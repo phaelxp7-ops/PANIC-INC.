@@ -8,6 +8,9 @@ var status: Label
 func _ready() -> void:
 	_criar_interface()
 	var argumentos: PackedStringArray = OS.get_cmdline_user_args()
+	if "--panic-start" in argumentos:
+		call_deferred("_jogar_solo")
+		return
 	if "--panic-server" in argumentos:
 		NetworkManager.criar_partida()
 		GameState.iniciar_novo_jogo()

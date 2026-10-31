@@ -60,37 +60,46 @@ func _process(delta: float) -> void:
 func montar_ambiente() -> void:
 	_ambiente = WorldEnvironment.new()
 	var ambiente: Environment = Environment.new()
-	ambiente.background_mode = Environment.BG_COLOR
-	ambiente.background_color = Color(0.009, 0.014, 0.027)
+	# Um céu explícito evita o fundo branco que algumas combinações AMD/Vulkan
+	# mostram quando o viewport troca de câmera durante o carregamento da cena.
+	var ceu: Sky = Sky.new()
+	var material_ceu: ProceduralSkyMaterial = ProceduralSkyMaterial.new()
+	material_ceu.sky_top_color = Color(0.018, 0.028, 0.052)
+	material_ceu.sky_horizon_color = Color(0.13, 0.16, 0.17)
+	material_ceu.ground_bottom_color = Color(0.012, 0.018, 0.020)
+	material_ceu.ground_horizon_color = Color(0.060, 0.078, 0.075)
+	material_ceu.sun_angle_max = 0.0
+	material_ceu.use_debanding = true
+	ceu.sky_material = material_ceu
+	ambiente.background_mode = Environment.BG_SKY
+	ambiente.sky = ceu
+	ambiente.background_energy_multiplier = 0.82
 	ambiente.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	ambiente.ambient_light_color = Color(0.16, 0.20, 0.24)
-	ambiente.ambient_light_energy = 0.38
+	ambiente.ambient_light_color = Color(0.39, 0.45, 0.49)
+	ambiente.ambient_light_energy = 0.82
 	ambiente.reflected_light_source = Environment.REFLECTION_SOURCE_BG
 	ambiente.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	ambiente.tonemap_exposure = 0.64
-	ambiente.tonemap_white = 4.0
-	ambiente.glow_enabled = true
-	ambiente.glow_intensity = 0.35
-	ambiente.glow_strength = 0.62
-	ambiente.glow_bloom = 0.06
-	ambiente.ssao_enabled = true
-	ambiente.ssao_radius = 1.3
-	ambiente.ssao_intensity = 1.2
-	ambiente.ssil_enabled = true
-	ambiente.ssil_radius = 3.0
-	ambiente.ssil_intensity = 0.4
-	ambiente.volumetric_fog_enabled = true
-	ambiente.volumetric_fog_density = 0.018
-	ambiente.volumetric_fog_albedo = Color(0.31, 0.38, 0.38)
-	ambiente.volumetric_fog_emission = Color(0.015, 0.021, 0.024)
-	ambiente.volumetric_fog_length = 110.0
+	ambiente.tonemap_exposure = 0.82
+	ambiente.tonemap_white = 1.6
+	# Neblina de profundidade simples: legível e compatível com GPU integrada.
+	ambiente.fog_enabled = true
+	ambiente.fog_light_color = Color(0.055, 0.073, 0.078)
+	ambiente.fog_density = 0.006
+	ambiente.fog_sun_scatter = 0.0
+	ambiente.fog_aerial_perspective = 0.0
+	ambiente.fog_depth_begin = 24.0
+	ambiente.fog_depth_end = 145.0
+	ambiente.glow_enabled = false
+	ambiente.ssao_enabled = false
+	ambiente.ssil_enabled = false
+	ambiente.sdfgi_enabled = false
 	_ambiente.environment = ambiente
 	_ambiente.add_to_group("ambiente_global")
 	add_child(_ambiente)
 	_luz_direcional = DirectionalLight3D.new()
-	_luz_direcional.rotation_degrees = Vector3(-35, -30, 0)
-	_luz_direcional.light_color = Color(0.36, 0.47, 0.57)
-	_luz_direcional.light_energy = 0.28
+	_luz_direcional.rotation_degrees = Vector3(-52, -30, 0)
+	_luz_direcional.light_color = Color(0.48, 0.57, 0.64)
+	_luz_direcional.light_energy = 0.82
 	_luz_direcional.shadow_enabled = true
 	_luz_direcional.directional_shadow_max_distance = 95.0
 	_luz_direcional.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
