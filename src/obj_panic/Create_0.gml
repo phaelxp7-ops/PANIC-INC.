@@ -41,7 +41,8 @@ ndx  = [1, -1, 0, 0];
 ndy  = [0, 0, 1, -1];
 ndx8 = [1, -1, 0, 0, 1, 1, -1, -1];
 ndy8 = [0, 0, 1, -1, 1, -1, 1, -1];
-item_names = ["DOCUMENTO CONFIDENCIAL", "KIT MEDICO", "BATERIA"];
+item_names = ["DOCUMENTO CONFIDENCIAL", "KIT MEDICO", "BATERIA", "FUSIVEL INDUSTRIAL", "RELIQUIA ANOMALA"];
+objective_names = ["RECUPERAR ARQUIVOS", "RELIGAR GERADORES", "CONTER A ANOMALIA"];
 structure_names = ["ARQUIVO", "ENFERMARIA", "SUBESTACAO", "ABRIGO" ];
 
 // ---------- MELHORIAS (upgrades entre fases) ----------
@@ -70,6 +71,7 @@ combo = 0; combo_timer = 0;
 blackout = 0; blackout_cd = 2400;
 flare_charges = 2; flare_pulse = 0; flare_x = 0; flare_y = 0;
 alert_cd = 0; heart_cd = 0; step_sign = false; drip_cd = 300; creak_cd = 900;
+jumpscare = 0; jumpscare_type = 0;
 particles = []; enemies = []; items = []; rooms = [];
 lamps = []; decals = []; floaters = []; dust = [];
 vb_world = -1;
@@ -373,15 +375,18 @@ spawn_enemy = function(_mind) {
     var _threat = clamp(level + floor(_zone_danger * 3), 1, 24);
     var _r = random(1);
     var _type = 0;
-    if (_threat >= 2 && _r < min(0.48, 0.16 + _zone_danger * 0.30 + max(0, level - 3) * 0.018)) _type = 1;
+    if (_threat >= 3 && _zone_danger > 0.42 && _r > 0.91) _type = 3;
+    else if (_threat >= 2 && _r < min(0.48, 0.16 + _zone_danger * 0.30 + max(0, level - 3) * 0.018)) _type = 1;
     else if (_threat >= 3 && _r > max(0.52, 0.84 - _zone_danger * 0.24 - max(0, level - 4) * 0.015)) _type = 2;
     var _spd = min(2.2, 0.72 + _threat * 0.065 + _zone_danger * 0.15) + random_range(-0.06, 0.06);
     if (_type == 1) _spd *= 1.32;
     if (_type == 2) _spd *= 1.14;
+    if (_type == 3) _spd *= 1.08;
     array_push(enemies, {
         x : _p.x, y : _p.y, spd : _spd, type : _type, danger : _zone_danger,
         face : random(360), anim : random(360), lit : false,
-        mode : 0, wdir : random(360), wt : irandom_range(30, 90), lost : 0, stun : 0
+        mode : 0, wdir : random(360), wt : irandom_range(30, 90), lost : 0, stun : 0,
+        stalk_cd : irandom_range(360, 720)
     });
 };
 
@@ -562,10 +567,13 @@ build_3d = function() {
 vb_doc   = make_box(make_color_rgb(255, 220, 60));
 vb_med   = make_box(make_color_rgb(80, 255, 120));
 vb_bat   = make_box(make_color_rgb(80, 220, 255));
+vb_fuse  = make_box(make_color_rgb(255, 145, 40));
+vb_relic = make_box(make_color_rgb(205, 70, 255));
 vb_lamp  = make_box(make_color_rgb(255, 230, 150));
-vb_body  = [make_box(make_color_rgb(120, 20, 25)), make_box(make_color_rgb(100, 40, 140)), make_box(make_color_rgb(200, 200, 215))];
-vb_hd    = [make_box(make_color_rgb(190, 50, 50)), make_box(make_color_rgb(160, 80, 210)), make_box(make_color_rgb(240, 240, 250))];
+vb_body  = [make_box(make_color_rgb(120, 20, 25)), make_box(make_color_rgb(100, 40, 140)), make_box(make_color_rgb(200, 200, 215)), make_box(make_color_rgb(18, 12, 20))];
+vb_hd    = [make_box(make_color_rgb(190, 50, 50)), make_box(make_color_rgb(160, 80, 210)), make_box(make_color_rgb(240, 240, 250)), make_box(make_color_rgb(45, 10, 18))];
 vb_eye   = make_box(make_color_rgb(255, 255, 80));
+vb_eye_watcher = make_box(make_color_rgb(255, 24, 42));
 vb_exit_open = make_box(make_color_rgb(60, 255, 90));
 vb_exit_lock = make_box(make_color_rgb(200, 40, 40));
 
@@ -609,7 +617,7 @@ generate_level = function() {
                 break;
             }
         }
-        if (_ok) array_push(rooms, { x : _cx, y : _cy, w : _w, h : _h, theme : irandom(3), danger : 0.2, kind : 0 });
+        if (_ok) array_push(rooms, { x : _cx, y : _cy, w : _w, h : _h, theme : irandom(3), danger : 0.2, kind : 0, visited : false, event_done : false });
     }
     for (var k = 0; k < array_length(rooms); k++) {
         var _rm = rooms[k];
@@ -651,6 +659,8 @@ generate_level = function() {
     var _s = rooms[0];
     player.x = (_s.x + _s.w div 2) * tile + tile / 2;
     player.y = (_s.y + _s.h div 2) * tile + tile / 2;
+    rooms[0].visited = true;
+    rooms[0].event_done = true;
     player.facing_dir = 0;
     camera_pitch = 0;
     player.hurt_cd = 0;
@@ -674,11 +684,14 @@ generate_level = function() {
 
     // --- itens ---
     items = [];
-    docs_total = min(4 + floor((level - 1) * 0.75), 12);
+    mission_type = irandom(2);
+    docs_total = (mission_type == 0) ? min(4 + floor((level - 1) * 0.75), 12)
+                                     : min(3 + floor((level - 1) * 0.45), 7);
     docs_got = 0;
+    var _objective_item = (mission_type == 0) ? 0 : ((mission_type == 1) ? 3 : 4);
     for (var i = 0; i < docs_total; i++) {
         var _p = random_floor(player.x, player.y, 260);
-        array_push(items, { x : _p.x, y : _p.y, type : 0, timer : random(360) });
+        array_push(items, { x : _p.x, y : _p.y, type : _objective_item, timer : random(360) });
     }
     repeat (2 + extra_pickups) {
         var _p1 = random_floor(player.x, player.y, 120);
@@ -717,7 +730,46 @@ generate_level = function() {
     update_flow();
     build_3d();
     current_zone = rooms[0];
-    show_msg("COMPLEXO " + string(level) + ": explore, colete dados e encontre a saida", 240);
+    show_msg("CONTRATO " + string(level) + ": " + objective_names[mission_type] + " - explore e prepare a extracao", 260);
+};
+
+gain_field_xp = function(_amount) {
+    player.xp += _amount;
+    if (player.xp >= player.xp_next) {
+        player.xp -= player.xp_next;
+        player.rank++;
+        player.xp_next += 2;
+        player.hp_max += 8;
+        player.stamina_max += 5;
+        player.hp = min(player.hp_max, player.hp + 20);
+        player.stamina = player.stamina_max;
+        pontos += 250;
+        show_msg("NIVEL DE CAMPO " + string(player.rank) + "! VIDA E VIGOR AUMENTARAM", 210);
+        play_snd(snd_win, 0.5, 1.1);
+    }
+};
+
+complete_contract = function() {
+    if (exit_open) return;
+    exit_open = true;
+    alarm_on = true;
+    var _ai = audio_play_sound(snd_alarm, 10, true);
+    audio_sound_gain(_ai, 0.35, 0);
+    shake = 12;
+    if (level == 1) {
+        show_msg("OBJETIVO CONCLUIDO! ENCONTRE A SAIDA VERDE", 240);
+        spawn_enemy(420);
+    } else {
+        show_msg("O VIGIA ACORDOU. A LUZ NAO VAI DETE-LO", 280);
+        spawn_enemy(520);
+        var _wi = array_length(enemies) - 1;
+        var _warden = enemies[_wi];
+        _warden.type = 3;
+        _warden.danger = max(0.78, _warden.danger);
+        _warden.spd = max(1.65, _warden.spd);
+        _warden.stalk_cd = irandom_range(180, 300);
+        enemies[_wi] = _warden;
+    }
 };
 
 apply_upgrade = function(_id) {
