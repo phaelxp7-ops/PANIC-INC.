@@ -30,19 +30,23 @@ if (state == STATE_TITLE) {
     }
     draw_set_alpha(1);
 
-    // titulo com glitch
+    // Cartao central usa escalas conservadoras para nao cortar texto em janelas menores.
     draw_set_halign(fa_center);
-    var _gl = ((current_time mod 1400) < 90) ? irandom_range(-6, 6) : 0;
-    gtext(gw / 2 + _gl + 3, 120, "PANIC INC.", 7, make_color_rgb(90, 0, 0));
-    gtext(gw / 2 + _gl, 120, "PANIC INC.", 7, c_red);
-    gtext(gw / 2, 250, "Sobreviva ao caos. Colete os documentos. Fuja pela saida.", 1.6, c_white);
-    gtext(gw / 2, 340, "WASD: mover   |   SHIFT: correr   |   MOUSE: mirar a lanterna (2D)", 1.3, c_ltgray);
-    gtext(gw / 2, 370, "E: pegar item   |   F: lanterna   |   TAB: alternar 2D / 3D   |   M: som   |   ESC: pausa", 1.3, c_ltgray);
-    gtext(gw / 2, 400, "No modo 3D: mouse ou setas giram a camera", 1.3, c_ltgray);
-    gtext(gw / 2, 450, "Correr faz barulho! Monstros ouvem voce.", 1.3, c_orange);
-    gtext(gw / 2, 476, "O perseguidor palido congela quando a luz bate nele.", 1.3, c_orange);
-    gtext(gw / 2, 580, "[ ENTER ] COMECAR", 2.6 + sin(current_time / 200) * 0.2, c_yellow);
-    if (best_pontos > 0) gtext(gw / 2, 650, "RECORDE: " + string(best_pontos) + "   |   MELHOR FASE: " + string(best_level), 1.5, c_aqua);
+    var _gl = ((current_time mod 1800) < 70) ? irandom_range(-3, 3) : 0;
+    var _title_scale = min(5.0, gw / 250);
+    gtext(gw / 2 + _gl + 2, 92, "PANIC INC.", _title_scale, make_color_rgb(90, 0, 0));
+    gtext(gw / 2 + _gl, 92, "PANIC INC.", _title_scale, c_red);
+    draw_set_color(make_color_rgb(24, 27, 40));
+    draw_roundrect(gw * 0.12, 205, gw * 0.88, 520, false);
+    draw_set_color(make_color_rgb(65, 76, 96));
+    draw_roundrect(gw * 0.12, 205, gw * 0.88, 520, true);
+    gtext(gw / 2, 226, "RECUPERE OS ARQUIVOS. NAO DEIXE A EQUIPE PARA TRAS.", 1.35, c_white);
+    gtext(gw / 2, 286, "WASD: mover     SHIFT: correr     MOUSE: mirar a lanterna", 1.1, c_ltgray);
+    gtext(gw / 2, 322, "E: coletar     F: lanterna     Q: sinalizador (atordoa monstros)", 1.1, c_aqua);
+    gtext(gw / 2, 358, "TAB: alternar 2D/3D     M: som     ESC: pausar", 1.1, c_ltgray);
+    gtext(gw / 2, 414, "Correr faz barulho. A luz segura o perseguidor palido.", 1.05, c_orange);
+    gtext(gw / 2, 570, "[ ENTER ]  INICIAR TURNO", 2.0 + sin(current_time / 200) * 0.12, c_yellow);
+    if (best_pontos > 0) gtext(gw / 2, 630, "RECORDE: " + string(best_pontos) + "   |   MELHOR FASE: " + string(best_level), 1.2, c_aqua);
     draw_set_halign(fa_left);
     exit;
 }
@@ -99,6 +103,7 @@ draw_text(24 + _bw + 10, 68, "BATERIA " + (flash_on ? "(ON)" : "(OFF)"));
 
 gtext(24, 96, "DOCUMENTOS: " + string(docs_got) + " / " + string(docs_total), 1.4, c_yellow);
 gtext(24, 124, "PONTOS: " + string(pontos), 1.2, c_white);
+gtext(24, 198, "SINALIZADORES [Q]: " + string(flare_charges), 1.05, c_aqua);
 if (combo > 1) {
     gtext(24, 148, "COMBO x" + string(combo), 1.4, c_orange);
     draw_set_color(c_dkgray);
@@ -244,3 +249,4 @@ draw_set_halign(fa_left);
 draw_set_valign(fa_top);
 draw_set_color(c_white);
 draw_set_alpha(1);
+
