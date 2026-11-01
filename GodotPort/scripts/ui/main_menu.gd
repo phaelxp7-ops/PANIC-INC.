@@ -64,7 +64,10 @@ func _criar_interface() -> void:
 		coluna, "Qualidade: " + Settings.qualidade + " (clique para alternar)", _alternar_qualidade
 	)
 	status = Label.new()
-	status.text = "WASD mover  •  Mouse olhar  •  E interagir  •  F lanterna  •  J diário"
+	status.text = (
+		"WASD mover  •  SHIFT correr  •  CTRL agachar  •  Mouse olhar\n"
+		+ "E interagir  •  V câmera  •  F lanterna  •  Mouse atacar  •  J diário"
+	)
 	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	status.add_theme_color_override("font_color", Color(0.55, 0.62, 0.64))

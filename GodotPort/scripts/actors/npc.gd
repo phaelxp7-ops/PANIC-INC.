@@ -4,13 +4,12 @@ extends CharacterBody3D
 const MODELO: String = "res://assets/kenney_characters/characterMedium.fbx"
 const PELE_MARTA: String = "res://assets/kenney_characters/survivorFemaleA.png"
 const PELE_TOMAS: String = "res://assets/kenney_characters/survivorMaleB.png"
-const ANIMACAO_IDLE: String = "res://assets/kenney_characters/idle.fbx"
 
 @export var nome: String = "Sobrevivente"
 @export var visual_id: String = "marta"
 var _tempo: float = 0.0
 var _corpo_visual: Node3D
-var _animacao: AnimationPlayer
+var _animacao: HumanoidAnimationPlayer
 
 
 func _ready() -> void:
@@ -32,7 +31,11 @@ func _ready() -> void:
 			var pele: String = PELE_MARTA if visual_id == "marta" else PELE_TOMAS
 			var textura: Texture2D = load(pele) as Texture2D
 			_aplicar_mapa(modelo, textura)
-			_configurar_idle(modelo)
+			_animacao = HumanoidAnimationPlayer.new()
+			_animacao.name = "AnimationPlayer"
+			modelo.add_child(_animacao)
+			if not _animacao.configurar(modelo):
+				push_error("%s: falha ao carregar Idle no Skeleton3D." % nome)
 	else:
 		push_warning(
 			"Sem modelo de NPC: usar placeholder até colocar um modelo rigado em assets/characters."
@@ -44,34 +47,6 @@ func _process(delta: float) -> void:
 	if _corpo_visual != null:
 		_corpo_visual.position.y = 0.006 * sin(_tempo * 1.4)
 		_corpo_visual.rotation.y = sin(_tempo * 0.22) * 0.025
-
-
-func _configurar_idle(modelo: Node3D) -> void:
-	_animacao = modelo.find_child("AnimationPlayer", true, false) as AnimationPlayer
-	var packed: PackedScene = load(ANIMACAO_IDLE) as PackedScene
-	if _animacao == null or packed == null:
-		return
-	var origem_root: Node = packed.instantiate()
-	var origem: AnimationPlayer = (
-		origem_root.find_child("AnimationPlayer", true, false) as AnimationPlayer
-	)
-	if origem == null:
-		origem_root.free()
-		return
-	var origem_biblioteca: AnimationLibrary = origem.get_animation_library("")
-	var destino_biblioteca: AnimationLibrary = _animacao.get_animation_library("")
-	for nome: StringName in origem.get_animation_list():
-		if origem_biblioteca == null or destino_biblioteca == null:
-			break
-		var clip: Animation = origem_biblioteca.get_animation(nome).duplicate() as Animation
-		# Mantém caminhos relativos ao root importado; o modelo usa o mesmo rig Kenney.
-		var nome_destino: StringName = StringName("npc_idle_" + String(nome))
-		if destino_biblioteca.has_animation(nome_destino):
-			destino_biblioteca.remove_animation(nome_destino)
-		destino_biblioteca.add_animation(nome_destino, clip)
-		_animacao.play(nome_destino)
-		break
-	origem_root.free()
 
 
 func _aplicar_mapa(no: Node, textura: Texture2D) -> void:

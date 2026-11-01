@@ -66,16 +66,19 @@ func _process(delta: float) -> void:
 func _verificar_queda(jogador: PlayerController) -> void:
 	if jogador.global_position.y > -50.0:
 		return
-	var destino: Vector3 = INICIO_FLORESTA
-	if jogador.global_position.x > 760.0:
-		destino = Vector3(840.0, -15.0, 14.0)
-	elif jogador.global_position.x > 420.0:
-		destino = Vector3(560.0, 1.0, 3.0)
-	elif jogador.global_position.x > 145.0:
-		destino = Vector3(280.0, 1.0, 3.0)
-	jogador.global_position = destino
+	jogador.global_position = _posicao_segura(jogador.global_position.x)
 	jogador.velocity = Vector3.ZERO
 	EventBus.mensagem.emit("Queda detectada. Você foi levado ao último setor seguro.", 3.0)
+
+
+func _posicao_segura(pos_x: float) -> Vector3:
+	if pos_x > 760.0:
+		return Vector3(840.0, -15.0, 14.0)
+	if pos_x > 420.0:
+		return Vector3(560.0, 1.0, 3.0)
+	if pos_x > 145.0:
+		return Vector3(280.0, 1.0, 3.0)
+	return INICIO_FLORESTA
 
 
 func montar_ambiente() -> void:
@@ -277,6 +280,13 @@ func _executar_interacao(jogador: PlayerController) -> void:
 		return
 	var acao: String = alvo.acao
 	match acao:
+		"porta_marta", "porta_estacao", "porta_tenda":
+			var porta: Node = alvo.get_parent()
+			if porta is CabinDoor:
+				(porta as CabinDoor).alternar()
+				EventBus.mensagem.emit(
+					"A madeira range alto demais para uma floresta tão quieta.", 2.5
+				)
 		"npc_marta":
 			var dialogo_marta: Array = GameState.historia.get("dialogos", {}).get("marta", [])
 			if not GameState.tem_flag("falou_marta"):

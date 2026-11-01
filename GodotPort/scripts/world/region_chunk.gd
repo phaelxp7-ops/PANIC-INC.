@@ -11,7 +11,9 @@ const CENA_ROCHA: Array[String] = [
 	"res://assets/kenney_survival/rock-b.glb",
 	"res://assets/kenney_survival/rock-c.glb"
 ]
+const CENA_TENDA: PackedScene = preload("res://assets/kenney_survival/tent.glb")
 const TEXTURA_CONCRETO: Texture2D = preload("res://assets/polyhaven/concrete_floor_diff_1k.jpg")
+const TEXTURA_PINHO: Texture2D = preload("res://assets/polyhaven/pine_bark_diff_1k.jpg")
 
 @export_enum("forest", "city", "complex", "subsoil") var region_id: String = "forest"
 @export var centro: Vector3 = Vector3.ZERO
@@ -95,6 +97,7 @@ func _montar_cenario() -> void:
 		_espalhar_multimesh(CENA_ROCHA, Settings.densidade_vegetacao(30), 50.0, 0.7, 2.3)
 		_montar_cabana(centro + Vector3(-55, 0, 8), "Cabana de Marta", Color(0.24, 0.15, 0.10))
 		_montar_cabana(centro + Vector3(55, 0, -40), "Estação Florestal", Color(0.27, 0.20, 0.14))
+		_montar_tenda_acampamento(centro + Vector3(20, 0, 57))
 		_montar_luz(centro + Vector3(-55, 3.2, 8), Color(1.0, 0.56, 0.26), 10.0)
 	elif region_id == "city":
 		_montar_rua()
@@ -165,7 +168,7 @@ func _montar_pontos_de_interesse() -> void:
 			Color(0.25, 0.39, 0.42)
 		)
 		_adicionar_interacao(
-			"Acampamento abandonado", "nota_2", centro + Vector3(20, 0, 57), Color(0.67, 0.51, 0.32)
+			"Acampamento abandonado", "nota_2", centro + Vector3(20, 0, 53.5), Color(0.67, 0.51, 0.32)
 		)
 		_adicionar_interacao(
 			"Lápide sem nome", "nota_3", centro + Vector3(-8, 0, -62), Color(0.52, 0.55, 0.56)
@@ -417,14 +420,19 @@ func _montar_cabana(pos: Vector3, nome: String, cor: Color) -> void:
 	raiz.position = pos
 	add_child(raiz)
 	var madeira: StandardMaterial3D = StandardMaterial3D.new()
-	madeira.albedo_texture = load("res://assets/polyhaven/pine_bark_diff_1k.jpg") as Texture2D
+	madeira.albedo_texture = TEXTURA_PINHO
 	madeira.albedo_color = cor
 	madeira.roughness = 0.9
-	_adicionar_cubo(raiz, "ParedeNorte", Vector3(0, 2.0, -4), Vector3(10, 4, 0.5), madeira)
-	_adicionar_cubo(raiz, "ParedeSul", Vector3(0, 2.0, 4), Vector3(10, 4, 0.5), madeira)
-	_adicionar_cubo(raiz, "ParedeLeste", Vector3(5, 2.0, 0), Vector3(0.5, 4, 8), madeira)
-	_adicionar_cubo(raiz, "ParedeOesteA", Vector3(-5, 2.0, -2.1), Vector3(0.5, 4, 3.8), madeira)
-	_adicionar_cubo(raiz, "ParedeOesteB", Vector3(-5, 2.0, 2.1), Vector3(0.5, 4, 3.8), madeira)
+	# Paredes físicas. A fachada oeste deixa um vão de 3,8 m para a porta.
+	_adicionar_cubo(raiz, "ParedeNorte", Vector3(0, 2.0, -4), Vector3(10, 4, 0.5), madeira, true)
+	_adicionar_cubo(raiz, "ParedeSul", Vector3(0, 2.0, 4), Vector3(10, 4, 0.5), madeira, true)
+	_adicionar_cubo(raiz, "ParedeLeste", Vector3(5, 2.0, 0), Vector3(0.5, 4, 8), madeira, true)
+	_adicionar_cubo(raiz, "ParedeOesteA", Vector3(-5, 2.0, -3.0), Vector3(0.5, 4, 2.0), madeira, true)
+	_adicionar_cubo(raiz, "ParedeOesteB", Vector3(-5, 2.0, 3.0), Vector3(0.5, 4, 2.0), madeira, true)
+	_adicionar_cubo(raiz, "VergaDaPorta", Vector3(-5, 3.72, 0), Vector3(0.5, 0.56, 4.0), madeira, true)
+	_montar_porta_cabana(
+		raiz, madeira, "porta_marta" if nome == "Cabana de Marta" else "porta_estacao"
+	)
 	var telhado_mat: StandardMaterial3D = madeira.duplicate() as StandardMaterial3D
 	telhado_mat.albedo_color = cor.darkened(0.32)
 	var telhado: PrismMesh = PrismMesh.new()
@@ -457,6 +465,110 @@ func _montar_cabana(pos: Vector3, nome: String, cor: Color) -> void:
 	vidro_mat.emission_energy_multiplier = 1.8
 	janela.material_override = vidro_mat
 	raiz.add_child(janela)
+	# Moldura simples para dar leitura de janela sem aumentar custo de renderização.
+	var moldura_mat: StandardMaterial3D = madeira.duplicate() as StandardMaterial3D
+	for lado: float in [-1.0, 1.0]:
+		_adicionar_cubo(
+			raiz, "MolduraJanela_%s" % str(lado), Vector3(5.36, 2.2, 0.2 + lado * 0.68),
+			Vector3(0.18, 1.22, 0.12), moldura_mat
+		)
+	_adicionar_cubo(
+		raiz, "PeitorilJanela", Vector3(5.38, 1.58, 0.2), Vector3(0.24, 0.12, 1.5), moldura_mat
+	)
+
+
+func _montar_tenda_acampamento(pos: Vector3) -> void:
+	var abrigo: Node3D = Node3D.new()
+	abrigo.name = "TendaDoAcampamento"
+	abrigo.position = pos
+	add_child(abrigo)
+	var visual: Node3D = CENA_TENDA.instantiate() as Node3D
+	visual.name = "ModeloKenney"
+	visual.scale = Vector3.ONE * 8.0
+	abrigo.add_child(visual)
+	var porta: CabinDoor = CabinDoor.new()
+	porta.name = "PortaInterativa"
+	porta.position = Vector3(-0.72, 0.0, -2.14)
+	abrigo.add_child(porta)
+	var aba: MeshInstance3D = MeshInstance3D.new()
+	aba.name = "AbaDaTenda"
+	var malha: BoxMesh = BoxMesh.new()
+	malha.size = Vector3(1.45, 2.82, 0.10)
+	aba.mesh = malha
+	aba.position = Vector3(0.73, 1.41, 0.0)
+	var lona: StandardMaterial3D = StandardMaterial3D.new()
+	lona.albedo_color = Color(0.16, 0.22, 0.17)
+	lona.roughness = 0.98
+	aba.material_override = lona
+	porta.add_child(aba)
+	var colisao: CollisionShape3D = CollisionShape3D.new()
+	colisao.name = "ColisaoDaPorta"
+	var caixa: BoxShape3D = BoxShape3D.new()
+	caixa.size = malha.size
+	colisao.shape = caixa
+	colisao.position = aba.position
+	porta.add_child(colisao)
+	var ponto: Interactable = Interactable.new()
+	ponto.name = "PontoDeInteracao"
+	ponto.nome_exibido = "Abrir a lona"
+	ponto.acao = "porta_tenda"
+	ponto.position = Vector3(0.73, 0.0, 0.2)
+	ponto.cor = Color(0.65, 0.72, 0.48)
+	ponto.show_marker = false
+	porta.add_child(ponto)
+
+
+func _montar_porta_cabana(raiz: Node3D, madeira: StandardMaterial3D, acao: String) -> void:
+	var porta: CabinDoor = CabinDoor.new()
+	porta.name = "PortaInterativa"
+	porta.position = Vector3(-4.72, 0.0, -1.82)
+	raiz.add_child(porta)
+	var folha: MeshInstance3D = MeshInstance3D.new()
+	folha.name = "Folha"
+	var malha: BoxMesh = BoxMesh.new()
+	malha.size = Vector3(0.18, 3.55, 3.55)
+	folha.mesh = malha
+	folha.position = Vector3(0.0, 1.78, 1.82)
+	var madeira_porta: StandardMaterial3D = StandardMaterial3D.new()
+	madeira_porta.albedo_texture = TEXTURA_PINHO
+	madeira_porta.albedo_color = Color(0.25, 0.14, 0.085)
+	madeira_porta.roughness = 0.92
+	folha.material_override = madeira_porta
+	porta.add_child(folha)
+	var macaneta: MeshInstance3D = MeshInstance3D.new()
+	macaneta.name = "Macaneta"
+	var esfera: SphereMesh = SphereMesh.new()
+	esfera.radius = 0.085
+	esfera.height = 0.17
+	macaneta.mesh = esfera
+	macaneta.position = Vector3(-0.14, 1.76, 3.34)
+	var metal: StandardMaterial3D = StandardMaterial3D.new()
+	metal.albedo_color = Color(0.48, 0.31, 0.12)
+	metal.metallic = 0.68
+	metal.roughness = 0.34
+	macaneta.material_override = metal
+	porta.add_child(macaneta)
+	var colisao: CollisionShape3D = CollisionShape3D.new()
+	colisao.name = "ColisaoDaPorta"
+	var caixa: BoxShape3D = BoxShape3D.new()
+	caixa.size = malha.size
+	colisao.shape = caixa
+	colisao.position = folha.position
+	porta.add_child(colisao)
+	var marco: StandardMaterial3D = madeira.duplicate() as StandardMaterial3D
+	for lado: float in [-1.0, 1.0]:
+		_adicionar_cubo(
+			raiz, "Batente_%s" % str(lado), Vector3(-4.70, 1.78, lado * 1.92),
+			Vector3(0.28, 3.6, 0.22), marco
+		)
+	var ponto: Interactable = Interactable.new()
+	ponto.name = "PontoDeInteracao"
+	ponto.nome_exibido = "Abrir a porta" if acao == "porta_marta" else "Abrir a estação"
+	ponto.acao = acao
+	ponto.position = Vector3(0.0, 0.0, 1.82)
+	ponto.cor = Color(0.78, 0.57, 0.30)
+	ponto.show_marker = false
+	porta.add_child(ponto)
 
 
 func _montar_predio(
@@ -587,6 +699,7 @@ func _adicionar_cubo(
 	pai.add_child(instancia)
 	if colisao:
 		var corpo: StaticBody3D = StaticBody3D.new()
+		corpo.name = "Colisao_" + nome
 		corpo.position = pos
 		var forma: CollisionShape3D = CollisionShape3D.new()
 		var caixa: BoxShape3D = BoxShape3D.new()
@@ -598,9 +711,11 @@ func _adicionar_cubo(
 
 
 func _adicionar_interacao(rotulo: String, acao: String, pos: Vector3, cor: Color) -> void:
-	if acao.begins_with("npc_"):
+	if acao.begins_with("npc_") or acao == "lucas":
 		var personagem: PanicNPC = PanicNPC.new()
-		personagem.nome = "Marta" if acao == "npc_marta" else "Tomás"
+		personagem.nome = (
+			"Marta" if acao == "npc_marta" else ("Lucas" if acao == "lucas" else "Tomás")
+		)
 		personagem.visual_id = "marta" if acao == "npc_marta" else "tomas"
 		personagem.position = pos
 		add_child(personagem)

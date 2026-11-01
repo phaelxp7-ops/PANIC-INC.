@@ -196,8 +196,8 @@ func _criar_interface() -> void:
 	root.add_child(label_msg)
 	var rodape: Label = _label(
 		(
-			"WASD mover • SHIFT correr • CTRL agachar • E interagir • F lanterna • M mapa • "
-			+ "J diário • ESC pausa"
+			"WASD mover • SHIFT correr • CTRL agachar • E interagir • V câmera • F lanterna • "
+			+ "M mapa • J diário • Mouse atacar • R recarregar • H curar • Q calmante • G ping • ESC pausa"
 		),
 		12,
 		Color(0.72, 0.75, 0.76)
@@ -205,7 +205,7 @@ func _criar_interface() -> void:
 	rodape.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	rodape.offset_left = 20
 	rodape.offset_right = -20
-	rodape.offset_top = -34
+	rodape.offset_top = -48
 	rodape.offset_bottom = -10
 	root.add_child(rodape)
 	label_fps = _label("", 11, Color(0.54, 0.62, 0.68))

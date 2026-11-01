@@ -5,6 +5,7 @@ extends CharacterBody3D
 const CENA_HUMANO: String = "res://assets/kenney_characters/characterMedium.fbx"
 const TEXTURA_ANA: String = "res://assets/kenney_characters/survivorFemaleA.png"
 const ALTURA: float = 1.74
+const PRAZO_REANIMACAO_SOLO: float = 8.0
 
 @export var vida: float = 100.0
 @export var sanidade: float = 100.0
@@ -21,6 +22,7 @@ var lanterna: SpotLight3D
 var nome_jogador: String = "Ana"
 var lanternada: bool = true
 var _visual: Node3D
+var _animador: HumanoidAnimationPlayer
 var _intencao: Vector2 = Vector2.ZERO
 var _yaw: float = 0.0
 var _pitch: float = -0.16
@@ -32,6 +34,7 @@ var _temporizador_bateria: float = 0.0
 var _temporizador_passos: float = 0.0
 var _temporizador_intencao: float = 0.0
 var _tempo_animacao: float = 0.0
+var _tempo_caido: float = 0.0
 var _sistema_audio: AudioStreamPlayer3D
 
 
@@ -77,6 +80,8 @@ func _unhandled_input(evento: InputEvent) -> void:
 	if evento.is_action_pressed("lanterna"):
 		_alternar_lanterna()
 	if evento.is_action_pressed("interagir") and world.hud != null and not world.hud.dialogo_ativo:
+		if _animador != null:
+			_animador.acionar(&"interact")
 		world.solicitar_interacao(self)
 	if evento.is_action_pressed("atirar"):
 		_solicitar_tiro()
@@ -94,6 +99,8 @@ func _unhandled_input(evento: InputEvent) -> void:
 		and world.hud != null
 		and world.hud.dialogo_ativo
 	):
+		if _animador != null:
+			_animador.acionar(&"interact")
 		world.hud.avancar_dialogo()
 	if (
 		evento is InputEventMouseButton
@@ -141,7 +148,8 @@ func _physics_process(delta: float) -> void:
 
 func _ler_intencao() -> void:
 	if (
-		world.hud != null
+		world != null
+		and world.hud != null
 		and (
 			world.hud.dialogo_ativo
 			or world.hud.pausa_ativa
@@ -237,6 +245,10 @@ func _simular_movimento(delta: float) -> void:
 		var velocidade_horizontal: float = Vector2(velocity.x, velocity.z).length()
 		_visual.position.y = sin(_tempo_animacao) * 0.035 * minf(velocidade_horizontal, 4.0)
 		_visual.rotation.z = lerpf(_visual.rotation.z, -_intencao.x * 0.05, 0.12)
+		if _animador != null:
+			_animador.atualizar_locomocao(
+				velocidade_horizontal > 0.35, _correndo and velocidade_horizontal > 2.8, _agachado
+			)
 	if direcao.length() > 0.1:
 		_temporizador_passos += delta
 		var intervalo: float = 0.31 if _correndo else 0.52
@@ -248,6 +260,27 @@ func _simular_movimento(delta: float) -> void:
 
 
 func _temporizadores_servidor(delta: float) -> void:
+	if caido:
+		var aliado_ativo: bool = false
+		for no: Node in get_tree().get_nodes_in_group("players"):
+			if no is PlayerController and no != self and not (no as PlayerController).caido:
+				aliado_ativo = true
+				break
+		if aliado_ativo:
+			_tempo_caido = 0.0
+		else:
+			_tempo_caido += delta
+			if _tempo_caido >= PRAZO_REANIMACAO_SOLO:
+				_tempo_caido = 0.0
+				if world != null:
+					global_position = world._posicao_segura(global_position.x)
+					velocity = Vector3.ZERO
+				reviver()
+				EventBus.mensagem.emit(
+					"Você desperta no último setor seguro. A floresta tomou algo em troca.", 4.0
+				)
+	else:
+		_tempo_caido = 0.0
 	if _usar_lanterna and bateria > 0.0:
 		_temporizador_bateria += delta
 		if _temporizador_bateria >= 1.0:
@@ -317,6 +350,11 @@ func _montar_personagem() -> void:
 			modelo.scale = Vector3.ONE
 			_visual.add_child(modelo)
 			_aplicar_textura(modelo, TEXTURA_ANA)
+			_animador = HumanoidAnimationPlayer.new()
+			_animador.name = "AnimationPlayer"
+			modelo.add_child(_animador)
+			if not _animador.configurar(modelo):
+				push_error("Ana: falha ao vincular Idle/Run ao Skeleton3D do modelo.")
 			return
 	push_warning(
 		"Modelo Kenney não importado; usando silhueta temporária. Verifique assets/kenney_characters."
@@ -473,6 +511,8 @@ func _solicitar_tiro_remoto(id: int, yaw: float, pitch: float, lanterna_ativa: b
 func _executar_tiro() -> void:
 	if caido:
 		return
+	if _animador != null:
+		_animador.acionar(&"combat")
 	if not tem_revolver:
 		EventBus.mensagem.emit("Marta ainda não entregou o revólver.", 2.0)
 		return
@@ -565,6 +605,7 @@ func receber_dano(valor: float) -> void:
 
 func reviver() -> void:
 	caido = false
+	_tempo_caido = 0.0
 	vida = 42.0
 	global_position.y += 0.2
 	EventBus.mensagem.emit("Você voltou. Permaneçam juntos.", 2.8)
